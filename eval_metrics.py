@@ -1,5 +1,5 @@
 import numpy as np
-from sim import Voter
+from voting_model import Voter
 
 def evaluate_resistance_to_malicious_behavior(simulation, method, num_tests=100):
     results = []
@@ -71,3 +71,38 @@ def evaluate_incentive_compatibility(simulation, method, num_tests=100):
     
     avg_difference = np.mean(results)
     return avg_difference
+
+
+def evaluate_simplicity(simulation, method):
+    # Implement logic to evaluate simplicity
+    pass
+
+def evaluate_robustness(simulation, method, num_tests=100):
+    results = []
+    for _ in range(num_tests):
+        simulation.simulate_voting()
+        original_allocations = simulation.round.calculate_allocations(method, quorum=1, min_amount=1)
+        
+        for voter in np.random.choice(simulation.round.voters, size=int(0.1 * simulation.round.num_voters), replace=False):
+            voter.reset_voter()
+            for project in np.random.choice(simulation.round.projects, size=int(0.5 * simulation.round.num_projects), replace=False):
+                amount = np.random.uniform(0, voter.balance_op)
+                voter.cast_vote(project, amount)
+        
+        modified_allocations = simulation.round.calculate_allocations(method, quorum=1, min_amount=1)
+        
+        difference = np.abs(np.array(original_allocations) - np.array(modified_allocations)).sum()
+        results.append(difference)
+        
+        simulation.reset_round()
+    
+    avg_difference = np.mean(results)
+    return avg_difference
+
+def evaluate_representativeness(simulation, method):
+    # Implement logic to evaluate representativeness
+    pass
+
+def evaluate_diversity(simulation, method):
+    # Implement logic to evaluate diversity of results
+    pass

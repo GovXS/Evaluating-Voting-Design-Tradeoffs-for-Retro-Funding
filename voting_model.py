@@ -1,5 +1,6 @@
 import numpy as np
 from eval import evaluate_resistance_to_collusion,evaluate_incentive_compatibility,evaluate_resistance_to_malicious_behavior
+from aggregation_methods import median_with_moving_phantoms,quadratic_median_with_moving_phantoms
 
 
 class Project:
@@ -119,6 +120,11 @@ class Round:
                     lo = np.quantile(votes, .25)
                     hi = np.quantile(votes, .75)
                     score = np.mean([v for v in votes if lo <= v <= hi])
+                elif scoring_method == 'median_with_moving_phantoms':
+                    score = median_with_moving_phantoms(votes, t=5)
+                elif scoring_method == 'quadratic_median_with_moving_phantoms':
+                    score = quadratic_median_with_moving_phantoms(votes, k=4)
+                
                 else:
                     score = sum(votes)            
                 if score < min_amount:
