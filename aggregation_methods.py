@@ -92,3 +92,37 @@ def median_with_phantoms(t_star):
 def objective(t_star):# ti
         return np.sum([median_with_phantoms(t_star) for _ in range(m)]) - 1
 t_star = brentq(objective, 0.0, 1.0)
+
+
+## we can also use gurobi for finding the optimal t, I have it installed on my computer but I am waiting for it to come back from the repair, It should be something like this
+
+import gurobipy as gp
+from gurobipy import GRB
+
+def find_optimal_t_star(n, m, F, p_hat):
+    model = gp.Model("Optimal_t_star")
+    t_star = model.addVar(vtype=GRB.CONTINUOUS, lb=0.0, ub=1.0, name="t_star")
+    total_median_expr = gp.LinExpr()
+    for j in range(m):
+        # Create F_t_star array (assuming F_t_star is defined somewhere in your context)
+        F_t_star = [F[k](t_star) for k in range(n + 1)]
+        
+        values_for_median = F_t_star + [p_hat[i][j] for i in range(n)]
+        sorted_values = sorted(values_for_median)
+        n_values = len(sorted_values)
+        median_index = n_values // 2   
+        if n_values % 2 == 1:
+            median_expr_j = sorted_values[median_index]
+        else:
+            median_expr_j = (sorted_values[median_index - 1] + sorted_values[median_index]) / 2
+        
+        total_median_expr.add(median_expr_j)
+    model.addConstr(total_median_expr == 1, name="total_median_constraint")
+    model.optimize()
+
+    if model.status == GRB.OPTIMAL:
+        optimal_t_star = t_star.x
+        return optimal_t_star
+    else:
+        return None
+
