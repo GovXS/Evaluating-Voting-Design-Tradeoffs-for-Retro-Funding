@@ -43,7 +43,7 @@ def compute_median_with_moving_phantoms(votes):
 
     def find_t_star():
         low, high = 0.0, 1.0
-        epsilon = 0
+        epsilon = 1e-6
         while high - low > epsilon:
             mid = (low + high) / 2
             if np.sum([median_with_phantoms(mid) for _ in range(m)]) > 1:
