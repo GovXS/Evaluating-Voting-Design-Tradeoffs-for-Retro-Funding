@@ -23,7 +23,7 @@ def find_t_star(votes):
 #############################################################
 
 # Eyal's Input:
-def f_k(t, k, n):
+def f1_k(t, k, n):
     if 0 <= t <= k / (n + 1):
         return 0
     elif k / (n + 1) < t < (k + 1) / (n + 1):
@@ -31,10 +31,16 @@ def f_k(t, k, n):
     elif (k + 1) / (n + 1) <= t <= 1:
         return 1
 
-def compute_median_with_moving_phantoms(votes):
+def f2_k(t, k, n):
+        return min(t*(n - k), 1)
+        
+def compute_median_with_moving_phantoms(votes,type):
     n, m = votes.shape  
     def median_with_phantoms(t_star):
-        F = [lambda t, k=k: f_k(t, k, n) for k in range(n + 1)]
+       if type==1: 
+                F = [lambda t, k=k: f1_k(t, k, n) for k in range(n + 1)]
+       else:
+               F = [lambda t, k=k: f2_k(t, k, n) for k in range(n + 1)]
         median_values = [
             np.median([F[k](t_star) for k in range(n + 1)] + [votes[i][j] for i in range(n)])
             for j in range(m)
@@ -43,7 +49,7 @@ def compute_median_with_moving_phantoms(votes):
 
     def find_t_star():
         low, high = 0.0, 1.0
-        epsilon = 1e-6
+        epsilon = 0
         while high - low > epsilon:
             mid = (low + high) / 2
             if np.sum([median_with_phantoms(mid) for _ in range(m)]) > 1:
