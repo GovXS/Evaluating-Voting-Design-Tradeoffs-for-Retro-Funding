@@ -37,13 +37,13 @@ def f2_k(t, k, n):
 def compute_median_with_moving_phantoms(votes,type):
     n, m = votes.shape  
     def median_with_phantoms(t_star):
-       if type==1: 
-                F = [lambda t, k=k: f1_k(t, k, n) for k in range(n + 1)]
-       else:
-               F = [lambda t, k=k: f2_k(t, k, n) for k in range(n + 1)]
+        if type==1: 
+            F = [lambda t, k=k: f1_k(t, k, n) for k in range(n + 1)]
+        else:
+            F = [lambda t, k=k: f2_k(t, k, n) for k in range(n + 1)]
         median_values = [
-            np.median([F[k](t_star) for k in range(n + 1)] + [votes[i][j] for i in range(n)])
-            for j in range(m)
+                        np.median([F[k](t_star) for k in range(n + 1)] + [votes[i][j] for i in range(n)])
+                            for j in range(m)
         ]
         return np.median(median_values)
 
