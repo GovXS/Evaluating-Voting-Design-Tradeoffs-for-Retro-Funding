@@ -2,7 +2,7 @@ import numpy as np
 import random
 import itertools
 
-#Genarating data
+#These are all methods of Genarating artificial voter data and then we have a code for parsing real voter data from pabulib 
 #n- number of voters
 #m- number of projects
 #K- number of tokens each voter distributes
