@@ -67,6 +67,7 @@ class Voter:
         # voter attributes
         self.laziness_factor = laziness
         self.expertise_factor = expertise
+        self.strategy='random'
 
     def reset_voter(self):
         self.votes = []
@@ -86,6 +87,52 @@ class Voter:
             {'project_id': v.project.project_id, 'amount': v.amount} 
             for v in self.votes
         ]
+    def vote(self, projects):
+        if self.strategy == 'random':
+            self.random_voting(projects)
+        elif self.strategy == 'equal_distribution':
+            self.equal_distribution_voting(projects)
+        elif self.strategy == 'top_k':
+            self.top_k_voting(projects, k=3)  # Default top-K voting with K=3
+        elif self.strategy == 'strategic':
+            self.strategic_voting(projects)
+        elif self.strategy == 'partial_commitment':
+            self.partial_commitment_voting(projects)
+        elif self.strategy == 'issue_based':
+            self.issue_based_voting(projects)
+
+    def random_voting(self, projects):
+        for project in projects:
+            amount = np.random.uniform(0, self.balance_op)
+            self.cast_vote(project, amount)
+
+    def equal_distribution_voting(self, projects):
+        amount = self.total_op / len(projects)
+        for project in projects:
+            self.cast_vote(project, amount)
+
+    def top_k_voting(self, projects, k):
+        sorted_projects = sorted(projects, key=lambda p: p.rating, reverse=True)[:k]
+        amount = self.total_op / k
+        for project in sorted_projects:
+            self.cast_vote(project, amount)
+
+    def strategic_voting(self, projects):
+        # Placeholder for strategic voting logic
+        pass
+
+    def partial_commitment_voting(self, projects):
+        major_commitment = 0.7 * self.total_op
+        minor_commitment = 0.3 * self.total_op / (len(projects) - 1)
+        top_project = max(projects, key=lambda p: p.rating)
+        self.cast_vote(top_project, major_commitment)
+        for project in projects:
+            if project != top_project:
+                self.cast_vote(project, minor_commitment)
+
+    def issue_based_voting(self, projects):
+        # Placeholder for issue-based voting logic
+        pass
 
 class Round:
     def __init__(self, max_funding):
@@ -134,6 +181,7 @@ class Round:
         
         total_score = sum(scores)
         allocations = []
+       
         for i, project in enumerate(self.projects):
             if normalize:
                 allocation = np.round(scores[i] / total_score * self.max_funding, 2)
@@ -197,6 +245,8 @@ class Simulation:
         return [p.show_results() for p in self.round.projects]
 
     def simulate_voting(self):
+        #for voter in self.round.voters:
+            #ßvoter.vote(self.round.projects)
 
         num_projects = self.round.num_projects
         for voter in self.round.voters:
