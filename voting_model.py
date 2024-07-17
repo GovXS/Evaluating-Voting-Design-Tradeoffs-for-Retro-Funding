@@ -133,6 +133,10 @@ class Voter:
     def issue_based_voting(self, projects):
         # Placeholder for issue-based voting logic
         pass
+    def prefers(self, project_a, project_b):
+        score_a = next((vote.amount for vote in self.votes if vote.project.project_id == project_a.project_id), 0)
+        score_b = next((vote.amount for vote in self.votes if vote.project.project_id == project_b.project_id), 0)
+        return score_a > score_b
 
 class Round:
     def __init__(self, max_funding):
@@ -182,13 +186,17 @@ class Round:
         total_score = sum(scores)
         allocations = []
        
-        for i, project in enumerate(self.projects):
-            if normalize:
-                allocation = np.round(scores[i] / total_score * self.max_funding, 2)
-            else:
-                allocation = scores[i]
-            project.token_amount = allocation
-            allocations.append(allocation)
+
+        if total_score == 0:
+            allocations = [0] * len(self.projects)
+        else:
+            for i, project in enumerate(self.projects):
+                if normalize:
+                    allocation = np.round(scores[i] / total_score * self.max_funding, 2)
+                else:
+                    allocation = scores[i]
+                project.token_amount = allocation
+                allocations.append(allocation)
         return allocations
 
 
