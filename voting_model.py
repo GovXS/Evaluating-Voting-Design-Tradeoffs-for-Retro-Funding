@@ -1,6 +1,5 @@
 import numpy as np
-#rom eval_metrics import evaluate_resistance_to_collusion,evaluate_incentive_compatibility,evaluate_resistance_to_malicious_behavior
-from aggregation_methods import median_with_moving_phantoms,quadratic_median_with_moving_phantoms
+from util.voting_rules import mean_rule,median_rule,quardratic_rule,median_with_moving_phantoms,quadratic_median_with_moving_phantoms
 
 
 class Project:
@@ -94,12 +93,8 @@ class Voter:
             self.equal_distribution_voting(projects)
         elif self.strategy == 'top_k':
             self.top_k_voting(projects, k=3)  # Default top-K voting with K=3
-        elif self.strategy == 'strategic':
-            self.strategic_voting(projects)
         elif self.strategy == 'partial_commitment':
             self.partial_commitment_voting(projects)
-        elif self.strategy == 'issue_based':
-            self.issue_based_voting(projects)
 
     def random_voting(self, projects):
         for project in projects:
@@ -117,9 +112,6 @@ class Voter:
         for project in sorted_projects:
             self.cast_vote(project, amount)
 
-    def strategic_voting(self, projects):
-        # Placeholder for strategic voting logic
-        pass
 
     def partial_commitment_voting(self, projects):
         major_commitment = 0.7 * self.total_op
@@ -130,8 +122,6 @@ class Voter:
             if project != top_project:
                 self.cast_vote(project, minor_commitment)
 
-    def issue_based_voting(self, projects):
-        # Placeholder for issue-based voting logic
         pass
     def prefers(self, project_a, project_b):
         score_a = next((vote.amount for vote in self.votes if vote.project.project_id == project_a.project_id), 0)
@@ -162,11 +152,11 @@ class Round:
                 score = 0
             else:
                 if scoring_method == 'median':
-                    score = np.median(votes)
+                    score = median_rule(votes)
                 elif scoring_method == 'mean':
-                    score = np.mean(votes)
+                    score = mean_rule(votes)
                 elif scoring_method == 'quadratic':
-                    score = sum(np.sqrt(votes))
+                    score = quardratic_rule(votes)
                 elif scoring_method == 'outliers':
                     lo = np.quantile(votes, .25)
                     hi = np.quantile(votes, .75)
