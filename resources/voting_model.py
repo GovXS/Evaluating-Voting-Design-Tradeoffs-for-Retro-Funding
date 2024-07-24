@@ -1,5 +1,5 @@
 import numpy as np
-from util.voting_rules import mean_rule,median_rule,quardratic_rule,median_with_moving_phantoms,quadratic_median_with_moving_phantoms
+from util.aggregation_methods import mean_rule,median_rule,quardratic_rule,median_with_moving_phantoms,quadratic_median_with_moving_phantoms
 
 
 class Project:

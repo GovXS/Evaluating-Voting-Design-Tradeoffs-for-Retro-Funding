@@ -1,5 +1,5 @@
 import numpy as np
-from voting_model import Voter
+from resources.voting_model import Voter
 
 def evaluate_resistance_to_malicious_behavior(simulation, method, num_tests=100):
     results = []
