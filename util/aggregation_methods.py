@@ -1,22 +1,18 @@
 import numpy as np
 
-def mean_aggregation(voting_matrix, total_op_tokens):
+def mean_aggregation(voting_matrix, num_voters, total_op_tokens):
     total_votes = np.sum(voting_matrix, axis=0)
-    mean_votes = total_votes / voting_matrix.shape[0]
-    normalized_mean_votes = mean_votes / np.sum(mean_votes)
-    return normalized_mean_votes
+    mean_votes = total_votes / num_voters
+    return mean_votes / np.sum(mean_votes) * total_op_tokens
 
 def median_aggregation(voting_matrix, total_op_tokens):
-    total_votes = np.sum(voting_matrix, axis=0)
     median_votes = np.median(voting_matrix, axis=0)
-    normalized_median_votes = median_votes / np.sum(median_votes) * total_op_tokens
-    return normalized_median_votes
+    return median_votes / np.sum(median_votes) * total_op_tokens
 
 def quadratic_aggregation(voting_matrix, total_op_tokens):
     total_votes = np.sum(voting_matrix, axis=0)
     quadratic_votes = total_votes ** 2
-    normalized_quadratic_votes = quadratic_votes / np.sum(quadratic_votes) * total_op_tokens
-    return normalized_quadratic_votes
+    return quadratic_votes / np.sum(quadratic_votes) * total_op_tokens
 
 def quadratic_median_with_moving_phantoms(votes, k):
         quadratic_votes = np.power(votes, k)

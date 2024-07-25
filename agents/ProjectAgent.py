@@ -1,10 +1,6 @@
 from mesa import Agent, Model
 from mesa.time import RandomActivation
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-#from voter_behaviour import random_uniform
-#from voting_rules import mean_aggregation, median_aggregation,quadratic_aggregation
 
 
 class ProjectAgent(Agent):
