@@ -4,6 +4,7 @@ import numpy as np
 
 from agents.ProjectAgent import ProjectAgent
 from agents.VoterAgent import VoterAgent
+from util.voting_rules import mean_aggregation,median_aggregation,quadratic_aggregation
 
 
 class VotingModel(Model):
@@ -40,17 +41,15 @@ class VotingModel(Model):
             raise ValueError("Unknown aggregation method")
 
     def mean_aggregation(self):
-        total_votes = np.sum(self.voting_matrix, axis=0)
-        mean_votes = total_votes / self.num_voters
-        return mean_votes / np.sum(mean_votes) * self.total_op_tokens
+        funds_allocated=mean_aggregation(self.voting_matrix,self.total_op_tokens,self.num_projects)
+        return funds_allocated
 
     def median_aggregation(self):
-        median_votes = np.median(self.voting_matrix, axis=0)
-        return median_votes / np.sum(median_votes) * self.total_op_tokens
+        funds_allocated=median_aggregation(self.voting_matrix,self.total_op_tokens,self.num_projects)
+        return funds_allocated
 
     def quadratic_aggregation(self):
-        total_votes = np.sum(self.voting_matrix, axis=0)
-        quadratic_votes = total_votes ** 2
-        return quadratic_votes / np.sum(quadratic_votes) * self.total_op_tokens
+        funds_allocated=quadratic_aggregation(self.voting_matrix,self.total_op_tokens,self.num_projects)
+        return funds_allocated
 
     
