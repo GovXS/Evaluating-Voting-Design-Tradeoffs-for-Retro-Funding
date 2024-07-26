@@ -1,7 +1,7 @@
 from mesa import Agent, Model
 from mesa.time import RandomActivation
 import numpy as np
-
+import pandas as pd
 from agents.ProjectAgent import ProjectAgent
 from agents.VoterAgent import VoterAgent
 from util.voting_rules import mean_aggregation,median_aggregation,quadratic_aggregation
@@ -51,5 +51,21 @@ class VotingModel(Model):
     def quadratic_aggregation(self):
         funds_allocated=quadratic_aggregation(self.voting_matrix,self.total_op_tokens,self.num_projects)
         return funds_allocated
+    
+    def compile_fund_allocations(self):
+        mean_allocations = self.allocate_funds("mean")
+        median_allocations = self.allocate_funds("median")
+        quadratic_allocations = self.allocate_funds("quadratic")
+
+
+        # Organize the results in a DataFrame
+        results_df = pd.DataFrame({
+            "Project": [f"Project {i+1}" for i in range(self.num_projects)],
+            "Mean Aggregation": mean_allocations,
+            "Median Aggregation": median_allocations,
+            "Quadratic Aggregation": quadratic_allocations
+        })
+
+        return results_df
 
     
