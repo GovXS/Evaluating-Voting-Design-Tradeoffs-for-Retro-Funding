@@ -10,24 +10,14 @@ def median_aggregation(voting_matrix,total_op_tokens,num_voters):
         return median_votes / np.sum(median_votes) * total_op_tokens
 
 def quadratic_aggregation(voting_matrix,total_op_tokens,num_voters):
-        total_votes = np.sum(voting_matrix, axis=0)
-        quadratic_votes = total_votes ** 2
+        x=np.sqrt(voting_matrix)
+        quadratic_votes = np.sum(x, axis=0)
         return quadratic_votes / np.sum(quadratic_votes) * total_op_tokens
 
-def quadratic_median_with_moving_phantoms(votes, k):
-        quadratic_votes = np.power(votes, k)
-        t_star = find_t_star(quadratic_votes)
-        votes_with_phantoms = quadratic_votes + [t_star] * len(quadratic_votes)
-        sorted_votes = np.sort(votes_with_phantoms)
-        median_index = len(sorted_votes) // 2
-        return np.power(sorted_votes[median_index], 1 / k)
-
-def find_t_star(votes):
-        # Implement a method to find t* such that the sum of the votes with phantoms equals 1
-        total_votes = sum(votes)
-        n = len(votes)
-        t_star = (1 - total_votes) / n
-        return t_star
+def quadratic_aggregation_round1(voting_matrix,total_op_tokens,num_voters):
+        x=np.sqrt(voting_matrix)
+        quadratic_votes = np.sum(x, axis=0)
+        return quadratic_votes
 #############################################################
 
 # Eyal's Input:
