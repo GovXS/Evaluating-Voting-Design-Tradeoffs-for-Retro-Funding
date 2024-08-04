@@ -9,10 +9,24 @@ def median_aggregation(voting_matrix,total_op_tokens,num_voters):
         median_votes = np.median(voting_matrix, axis=0)
         return median_votes / np.sum(median_votes) * total_op_tokens
 
-def quadratic_aggregation(voting_matrix,total_op_tokens,num_voters):
-        x=np.sqrt(voting_matrix)
-        quadratic_votes = np.sum(x, axis=0)
-        return quadratic_votes / np.sum(quadratic_votes) * total_op_tokens
+
+
+def quadratic_aggregation(voting_matrix, total_funds):
+    # Calculate the true vote (square root of the tokens)
+    true_vote = voting_matrix.applymap(np.sqrt)
+
+    # Calculate the vote distribution for each project
+    sum_sqrt_tokens_per_project = true_vote.sum(axis=0)
+    total_sum_sqrt_tokens = sum_sqrt_tokens_per_project.sum()
+
+    # Vote distribution to each project
+    a_p = sum_sqrt_tokens_per_project / total_sum_sqrt_tokens
+
+    # Fund allocation to each project
+    fund_allocation = total_funds * a_p
+
+    return fund_allocation
+
 
 def quadratic_aggregation_round1(voting_matrix,total_op_tokens,num_voters):
         x=np.sqrt(voting_matrix)
