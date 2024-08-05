@@ -2,6 +2,15 @@ import numpy as np
 import random
 import itertools
 
+import numpy as np
+
+def random_uniform_model(n, num_projects, total_op_tokens):
+    votes = []
+    for _ in range(n):
+        vote = np.random.dirichlet(np.ones(num_projects)) * total_op_tokens
+        votes.append(vote)
+    return votes
+
 #These are all methods of Genarating artificial voter data and then we have a code for parsing real voter data from pabulib 
 #n- number of voters
 #m- number of projects
@@ -20,6 +29,19 @@ def rn_model(n, m, K, alpha):
         urn.extend([chosen_vote] * alpha)
     
     return votes
+
+def optimized_rn_model(n, m, K, alpha):
+    # Generate initial random votes
+    urn = [np.random.multinomial(K, [1.0/m] * m) for _ in range(100)]
+    
+    votes = []
+    for i in range(n):
+        chosen_vote = random.choice(urn)
+        votes.append(chosen_vote)
+        urn.extend([chosen_vote] * alpha)
+    
+    return votes
+
 
 def mallows_model(n, m, K, base_vote=None):
     if base_vote is None:
