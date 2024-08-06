@@ -6,7 +6,7 @@ import sys
 
 # Add the directory containing the VotingModel to the Python path
 sys.path.append(os.path.abspath('/Users/idrees/Code/govxs/'))
-from util.voting_rules import mean_aggregation, median_aggregation, quadratic_aggregation
+from model.VotingRules import mean_aggregation, median_aggregation, quadratic_aggregation
 from model.VotingModel import VotingModel
 
 def utility(voter_preferences, outcome):

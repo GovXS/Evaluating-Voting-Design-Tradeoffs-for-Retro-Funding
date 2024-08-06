@@ -25,9 +25,9 @@ def quadratic_aggregation_round1(voting_matrix,total_op_tokens,num_voters):
         x=np.sqrt(voting_matrix)
         quadratic_votes = np.sum(x, axis=0)
         return quadratic_votes
+
 #############################################################
 
-# Eyal's Input:
 def f1_k(t, k, n):
     if 0 <= t <= k / (n + 1):
         return 0

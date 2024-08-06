@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from agents.VoterAgent import VoterAgent
 from agents.ProjectAgent import ProjectAgent
-from util.voting_rules import mean_aggregation, median_aggregation, quadratic_aggregation
+from model.VotingRules import mean_aggregation, median_aggregation, quadratic_aggregation
 
 class VotingModel(Model):
     def __init__(self, voter_type, num_voters, num_projects, total_op_tokens):
@@ -28,7 +28,8 @@ class VotingModel(Model):
         for i, voter in enumerate(self.voters):
             voter.vote()
             self.voting_matrix[i, :] = voter.votes
-            
+        return self.voting_matrix
+
     def run_simulation(self):
         self.step()
         results_df = self.compile_fund_allocations()
