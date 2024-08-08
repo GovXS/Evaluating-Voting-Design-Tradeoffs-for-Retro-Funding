@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from agents.VoterAgent import VoterAgent
 from agents.ProjectAgent import ProjectAgent
-from model.VotingRules import mean_aggregation, median_aggregation, quadratic_aggregation
+from model.VotingRules import VotingRules
 
 class VotingModel(Model):
     def __init__(self, voter_type, num_voters, num_projects, total_op_tokens):
@@ -24,6 +24,18 @@ class VotingModel(Model):
 
         self.voting_matrix = np.zeros((num_voters, num_projects))
 
+        # Initialize the voting rules
+        self.voting_rules = self._discover_voting_rules()
+
+    def _discover_voting_rules(self):
+        voting_rules = {}
+        voting_rules_instance = VotingRules()
+        for attr_name in dir(voting_rules_instance):
+            attr = getattr(voting_rules_instance, attr_name)
+            if callable(attr) and not attr_name.startswith("__"):
+                voting_rules[attr_name] = attr
+        return voting_rules
+
     def step(self):
         for i, voter in enumerate(self.voters):
             voter.vote()
@@ -36,37 +48,20 @@ class VotingModel(Model):
         return results_df
 
     def allocate_funds(self, method):
-        if method == "mean":
-            return self.mean_aggregation()
-        elif method == "median":
-            return self.median_aggregation()
-        elif method == "quadratic":
-            return self.quadratic_aggregation()
-        else:
-            raise ValueError("Unknown aggregation method")
+        if method not in self.voting_rules:
+            raise ValueError(f"Unknown aggregation method: {method}")
+        return self.voting_rules[method](self.voting_matrix, self.total_op_tokens, self.num_voters)
 
-    def mean_aggregation(self):
-        funds_allocated = mean_aggregation(self.voting_matrix, self.total_op_tokens, self.num_projects)
-        return funds_allocated
+    def add_voting_rule(self, name, func):
+        self.voting_rules[name] = func
 
-    def median_aggregation(self):
-        funds_allocated = median_aggregation(self.voting_matrix, self.total_op_tokens, self.num_projects)
-        return funds_allocated
+    def remove_voting_rule(self, name):
+        if name in self.voting_rules:
+            del self.voting_rules[name]
 
-    def quadratic_aggregation(self):
-        funds_allocated = quadratic_aggregation(self.voting_matrix, self.total_op_tokens, self.num_projects)
-        return funds_allocated
-    
     def compile_fund_allocations(self):
-        mean_allocations = self.allocate_funds("mean")
-        median_allocations = self.allocate_funds("median")
-        quadratic_allocations = self.allocate_funds("quadratic")
-
-        results_df = pd.DataFrame({
-            "Project": [f"Project {i+1}" for i in range(self.num_projects)],
-            "Mean Aggregation": mean_allocations,
-            "Median Aggregation": median_allocations,
-            "Quadratic Aggregation": quadratic_allocations
-        })
-
+        allocations = {name: self.allocate_funds(name) for name in self.voting_rules.keys()}
+        allocations["Project"] = [f"Project {i+1}" for i in range(self.num_projects)]
+        
+        results_df = pd.DataFrame(allocations)
         return results_df

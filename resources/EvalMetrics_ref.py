@@ -1,34 +1,24 @@
+# model/EvalMetrics.py
+
 import numpy as np
 import pandas as pd
+from model.VotingRules import mean_aggregation, median_aggregation, quadratic_aggregation
 
 class EvalMetrics:
     def __init__(self, model):
         self.model = model
 
     # Bribery Cost
-    def simulate_bribery(self, method, target_project, desired_increase):
-        if method == "mean":
-            return self.simulate_bribery_mean(target_project, desired_increase)
-        elif method == "median":
-            return self.simulate_bribery_median(target_project, desired_increase)
-        elif method == "quadratic":
-            return self.simulate_bribery_quadratic(target_project, desired_increase)
-        else:
-            raise ValueError(f"Unknown method for bribery simulation: {method}")
-
     def simulate_bribery_mean(self, target_project, desired_increase):
         num_voters, num_projects = self.model.voting_matrix.shape
         new_voting_matrix = self.model.voting_matrix.copy()
 
-        original_allocation = self.model.allocate_funds("mean_aggregation")
+        original_allocation = self.model.mean_aggregation()
         original_funds = original_allocation[target_project]
-
         target_funds = original_funds + desired_increase
         total_required_votes = target_funds * num_voters
-
         current_votes = np.sum(new_voting_matrix[:, target_project])
         votes_needed = total_required_votes - current_votes
-
         bribery_cost = votes_needed
         return bribery_cost
 
@@ -36,66 +26,40 @@ class EvalMetrics:
         num_voters, num_projects = self.model.voting_matrix.shape
         new_voting_matrix = self.model.voting_matrix.copy()
 
-        original_allocation = self.model.allocate_funds("quadratic_aggregation")
+        original_allocation = self.model.quadratic_aggregation()
         original_funds = original_allocation[target_project]
-
         target_funds = original_funds + desired_increase
         total_required_votes = (target_funds * np.sum(original_allocation)) ** 0.5
-
         current_votes = np.sum(new_voting_matrix[:, target_project] ** 2)
         votes_needed = total_required_votes - np.sqrt(current_votes)
         votes_needed = votes_needed ** 2
-
         bribery_cost = votes_needed
         return bribery_cost
 
     def simulate_bribery_median(self, target_project, desired_increase):
         num_voters, num_projects = self.model.voting_matrix.shape
         new_voting_matrix = self.model.voting_matrix.copy()
-
-        original_allocation = self.model.allocate_funds("median_aggregation")
+        original_allocation = self.model.median_aggregation()
         original_funds = original_allocation[target_project]
-
         target_funds = original_funds + desired_increase
         votes = new_voting_matrix[:, target_project]
         current_median_vote = np.median(votes)
-
         total_required_votes = target_funds * self.model.num_voters / self.model.total_op_tokens
         votes_needed = total_required_votes - current_median_vote
-
         bribery_cost = desired_increase
         return bribery_cost
 
-    def evaluate_bribery(self, num_rounds):
-        max_bribe = 1e6
-        desired_increases = np.linspace(max_bribe / num_rounds, max_bribe, num_rounds)
-        results = {'round': list(range(1, num_rounds + 1))}
-        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
-        for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_bribery_cost'] = []
-
-        for i in range(num_rounds):
-            self.model.step()
-
-            target_project = np.random.randint(0, self.model.num_projects)  # Randomly select a target project
-            desired_increase = desired_increases[i]
-            results['desired_increase'].append(desired_increase)
-
-            for voting_rule in self.model.voting_rules.keys():
-                if voting_rule == "mean_aggregation":
-                    bribery_cost = self.simulate_bribery_mean(target_project, desired_increase)
-                elif voting_rule == "median_aggregation":
-                    bribery_cost = self.simulate_bribery_median(target_project, desired_increase)
-                elif voting_rule == "quadratic_aggregation":
-                    bribery_cost = self.simulate_bribery_quadratic(target_project, desired_increase)
-                else:
-                    print(f"Bribery Cost Calculation Function for {voting_rule} is not defined in EvalMetrics")
-                    bribery_cost = 0
-
-                results[f'{voting_rule}_bribery_cost'].append(bribery_cost)
-
-        final_results = pd.DataFrame(results)
-        return final_results
+    def evaluate_bribery_impact(self, target_project, desired_increase):
+        bribery_costs = {}
+        for method in ["mean", "median", "quadratic"]:
+            if method == "mean":
+                bribery_cost = self.simulate_bribery_mean(target_project, desired_increase)
+            elif method == "median":
+                bribery_cost = self.simulate_bribery_median(target_project, desired_increase)
+            elif method == "quadratic":
+                bribery_cost = self.simulate_bribery_quadratic(target_project, desired_increase)
+            bribery_costs[method + "_bribery_cost"] = bribery_cost
+        return bribery_costs
 
     # Gini Index
     def calculate_gini_index(self, allocation):
@@ -106,15 +70,16 @@ class EvalMetrics:
         cumulative_allocation = np.cumsum(allocation_sorted)
         numerator = 2 * np.sum((np.arange(1, m + 1) - 1) * allocation_sorted) - m * cumulative_allocation[-1]
         denominator = m * cumulative_allocation[-1]
-        return numerator / denominator
+        gini_index = numerator / denominator
+        return gini_index
 
-    def evaluate_gini_index(self, num_rounds):
+    def evaluate_gini_index(self, num_rounds, voting_rules):
         results = {'round': list(range(1, num_rounds + 1))}
-        for voting_rule in self.model.voting_rules.keys():
+        for voting_rule in voting_rules:
             results[f'{voting_rule}_gini_index'] = []
         for round_num in range(num_rounds):
             self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
+            for voting_rule in voting_rules:
                 allocation = self.model.allocate_funds(voting_rule)
                 gini_index = self.calculate_gini_index(allocation)
                 results[f'{voting_rule}_gini_index'].append(gini_index)
@@ -131,17 +96,13 @@ class EvalMetrics:
         x_star_top_k = np.argsort(-x_star)[:top_k]
         return np.sum(np.isin(x_top_k, x_star_top_k, invert=True))
 
-    def evaluate_alignment(self, num_rounds):
-        # Generate ground truth for alignment evaluation
-        ground_truth = self.generate_ground_truth(self.model.num_projects)
-        top_k = 200  # Number of top projects to compare for Hamming distance 
-
+    def evaluate_alignment(self, num_rounds, voting_rules, ground_truth, top_k):
         results = {'round': list(range(1, num_rounds + 1))}
-        for voting_rule in self.model.voting_rules.keys():
+        for voting_rule in voting_rules:
             results[f'{voting_rule}_hamming_distance'] = []
         for round_num in range(num_rounds):
             self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
+            for voting_rule in voting_rules:
                 allocation = self.model.allocate_funds(voting_rule)
                 allocation_normalized = allocation / np.sum(allocation)
                 hamming_distance = self.calculate_hamming_distance(allocation_normalized, ground_truth, top_k)
@@ -154,7 +115,7 @@ class EvalMetrics:
 
     def evaluate_group_strategyproofness(self, coalition_size=3):
         group_strategyproofness_results = []
-        for method in self.model.voting_rules.keys():
+        for method in ["mean", "median", "quadratic"]:
             truthfully_voted_outcome = self.model.allocate_funds(method)
             group_strategyproof = True
             for _ in range(100):
@@ -211,22 +172,11 @@ class EvalMetrics:
         budget = abs(new_funds - current_funds) * self.model.num_projects
         return budget, new_allocation
 
-    def evaluate_control(self, num_rounds):
-        # Define control functions
-        control_functions = {
-            "add_projects": lambda m, p, vr: self.add_remove_projects(p, vr, True),
-            "remove_projects": lambda m, p, vr: self.add_remove_projects(p, vr, False),
-            "add_voters": lambda m, p, vr: self.add_remove_voters(p, vr, True),
-            "remove_voters": lambda m, p, vr: self.add_remove_voters(p, vr, False)
-        }
-
-        # Select a random project for manipulation
-        project_to_manipulate = np.random.randint(self.model.num_projects)
-
+    def simulate_control(self, num_rounds, control_functions, project_to_manipulate, voting_rules, *args):
         results = []
         for _ in range(num_rounds):
             self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
+            for voting_rule in voting_rules:
                 round_results = {'voting_rule': voting_rule}
                 for control_name, control_function in control_functions.items():
                     budget, new_allocation = control_function(self.model, project_to_manipulate, voting_rule)
@@ -235,29 +185,38 @@ class EvalMetrics:
         return pd.DataFrame(results)
 
     # Robustness
-    def random_change_vote(self, vote):
+    def random_change_vote(self, vote, num_projects):
         new_vote = vote.copy()
-        change_idx = np.random.randint(0, self.model.num_projects)
+        change_idx = np.random.randint(0, num_projects)
         new_vote[change_idx] = np.random.uniform(0, 1)
         return new_vote
 
     def calculate_distance(self, x, x_prime):
         return np.linalg.norm(x - x_prime)
 
-    def evaluate_robustness(self, num_rounds):
-        robustness_results = {f"{method}_distances": [] for method in self.model.voting_rules.keys()}
-        for method in self.model.voting_rules.keys():
-            for _ in range(num_rounds):
+    def evaluate_robustness(self, rounds):
+        robustness_results = {
+            "mean_distances": [],
+            "median_distances": [],
+            "quadratic_distances": []
+        }
+        for method in ["mean", "median", "quadratic"]:
+            for _ in range(rounds):
                 original_outcome = self.model.allocate_funds(method)
                 voter_idx = np.random.randint(0, self.model.num_voters)
                 original_vote = self.model.voting_matrix[voter_idx].copy()
-                new_vote = self.random_change_vote(original_vote)
+                new_vote = self.random_change_vote(original_vote, self.model.num_projects)
                 new_voting_matrix = self.model.voting_matrix.copy()
                 new_voting_matrix[voter_idx] = new_vote
                 self.model.voting_matrix = new_voting_matrix
                 new_outcome = self.model.allocate_funds(method)
                 distance = self.calculate_distance(original_outcome, new_outcome)
-                robustness_results[f"{method}_distances"].append(distance)
+                if method == "mean":
+                    robustness_results["mean_distances"].append(distance)
+                elif method == "median":
+                    robustness_results["median_distances"].append(distance)
+                elif method == "quadratic":
+                    robustness_results["quadratic_distances"].append(distance)
                 self.model.voting_matrix[voter_idx] = original_vote
         robustness_df = pd.DataFrame(robustness_results)
         robustness_df["round"] = robustness_df.index + 1
@@ -269,34 +228,14 @@ class EvalMetrics:
         total_distance = np.sum(np.linalg.norm(voting_matrix - allocation, ord=1, axis=1))
         return total_distance / n
 
-    def evaluate_social_welfare(self, num_rounds):
+    def evaluate_social_welfare(self, num_rounds, voting_rules):
         results = {'round': list(range(1, num_rounds + 1))}
-        for voting_rule in self.model.voting_rules.keys():
+        for voting_rule in voting_rules:
             results[f'{voting_rule}_social_welfare'] = []
         for round_num in range(num_rounds):
             self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
+            for voting_rule in voting_rules:
                 allocation = self.model.allocate_funds(voting_rule)
                 social_welfare = self.calculate_social_welfare(allocation, self.model.voting_matrix)
                 results[f'{voting_rule}_social_welfare'].append(social_welfare)
-        return pd.DataFrame(results)
-
-    def l1_distance(x, xi):
-        return np.sum(np.abs(x - xi))
-
-    def evaluate_social_welfare_1(self,num_rounds):
-        results = {'round': list(range(1, num_rounds + 1))}
-        for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_social_welfare'] = []
-
-        for round_num in range(num_rounds):
-            self.model.step()   
-            for voting_rule in self.model.voting_rules.keys():
-                outcome = self.model.allocate_funds(voting_rule)
-                total_distance = 0
-                for i in range(self.model.num_voters):
-                    total_distance += self.l1_distance(outcome, self.model.voting_matrix[i])
-                average_distance = total_distance / model.num_voters
-                results[f'{voting_rule}_social_welfare_avg_l1_distance'].append(average_distance)
-
         return pd.DataFrame(results)
