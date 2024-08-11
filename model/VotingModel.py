@@ -14,11 +14,13 @@ class VotingModel(Model):
         self.schedule = RandomActivation(self)
         self.voter_type = voter_type
 
-        self.voters = [VoterAgent(i, self, voter_type, num_projects, total_op_tokens) for i in range(num_voters)]
+        self.voter = VoterAgent(0, self, voter_type, num_projects, total_op_tokens)
+
+        #self.voters = [VoterAgent(i, self, voter_type, num_projects, total_op_tokens) for i in range(num_voters)]
         self.projects = [ProjectAgent(i, self) for i in range(num_projects)]
 
-        for voter in self.voters:
-            self.schedule.add(voter)
+        #for voter in self.voters:
+        #    self.schedule.add(voter)
         for project in self.projects:
             self.schedule.add(project)
 
@@ -35,13 +37,20 @@ class VotingModel(Model):
             if callable(attr) and not attr_name.startswith("__"):
                 voting_rules[attr_name] = attr
         return voting_rules
+    
+    def step(self):
+        self.voting_matrix = self.voter.vote(self.num_voters)
+        return self.voting_matrix
 
+    '''
     def step(self):
         for i, voter in enumerate(self.voters):
             voter.vote()
             self.voting_matrix[i, :] = voter.votes
         return self.voting_matrix
-
+    '''
+    # The voter generates the entire voting matrix
+        
     def run_simulation(self):
         self.step()
         results_df = self.compile_fund_allocations()

@@ -4,6 +4,12 @@ import itertools
 
 import numpy as np
 
+#These are all methods of Genarating artificial voter data and then we have a code for parsing real voter data from pabulib 
+#n- number of voters
+#m- number of projects
+#K- number of tokens each voter distributes
+#alpha- number of copies returned to the urn. The higher the value of alpha, the stronger the correlation between votes.
+
 def random_uniform_model(n, num_projects, total_op_tokens):
     votes = []
     for _ in range(n):
@@ -11,11 +17,7 @@ def random_uniform_model(n, num_projects, total_op_tokens):
         votes.append(vote)
     return votes
 
-#These are all methods of Genarating artificial voter data and then we have a code for parsing real voter data from pabulib 
-#n- number of voters
-#m- number of projects
-#K- number of tokens each voter distributes
-#alpha- number of copies returned to the urn. The higher the value of alpha, the stronger the correlation between votes.
+
 def rn_model(n, m, K, alpha):
     urn = []
     for vote in itertools.product(range(K + 1), repeat=m):
