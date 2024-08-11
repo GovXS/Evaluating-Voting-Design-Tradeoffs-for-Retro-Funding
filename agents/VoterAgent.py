@@ -1,6 +1,6 @@
 from mesa import Agent
 import numpy as np
-from model.VoterBehaviours import random_uniform_model, rn_model, mallows_model, euclidean_model, multinomial_model, optimized_rn_model
+
 
 class VoterAgent(Agent):
     def __init__(self, unique_id, model, voter_type, num_projects, total_op_tokens):

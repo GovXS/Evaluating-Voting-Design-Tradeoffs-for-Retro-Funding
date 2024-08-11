@@ -51,12 +51,12 @@ class EvalMetrics:
 
     def evaluate_bribery_impact(self, target_project, desired_increase):
         bribery_costs = {}
-        for method in ["mean", "median", "quadratic"]:
-            if method == "mean":
+        for method in ["r1_quadratic", "r2_mean", "r3_median"]:
+            if method == "r1_quadratic":
                 bribery_cost = self.simulate_bribery_mean(target_project, desired_increase)
-            elif method == "median":
+            elif method == "r2_mean":
                 bribery_cost = self.simulate_bribery_median(target_project, desired_increase)
-            elif method == "quadratic":
+            elif method == "r3_median":
                 bribery_cost = self.simulate_bribery_quadratic(target_project, desired_increase)
             bribery_costs[method + "_bribery_cost"] = bribery_cost
         return bribery_costs

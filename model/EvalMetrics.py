@@ -7,11 +7,11 @@ class EvalMetrics:
 
     # Bribery Cost
     def simulate_bribery(self, method, target_project, desired_increase):
-        if method == "mean":
+        if method == "r2_mean":
             return self.simulate_bribery_mean(target_project, desired_increase)
-        elif method == "median":
+        elif method == "r3_median":
             return self.simulate_bribery_median(target_project, desired_increase)
-        elif method == "quadratic":
+        elif method == "r1_quadratic":
             return self.simulate_bribery_quadratic(target_project, desired_increase)
         else:
             raise ValueError(f"Unknown method for bribery simulation: {method}")
@@ -20,7 +20,7 @@ class EvalMetrics:
         num_voters, num_projects = self.model.voting_matrix.shape
         new_voting_matrix = self.model.voting_matrix.copy()
 
-        original_allocation = self.model.allocate_funds("mean_aggregation")
+        original_allocation = self.model.allocate_funds("r2_mean")
         original_funds = original_allocation[target_project]
 
         target_funds = original_funds + desired_increase
@@ -36,7 +36,7 @@ class EvalMetrics:
         num_voters, num_projects = self.model.voting_matrix.shape
         new_voting_matrix = self.model.voting_matrix.copy()
 
-        original_allocation = self.model.allocate_funds("quadratic_aggregation")
+        original_allocation = self.model.allocate_funds("r1_quadratic")
         original_funds = original_allocation[target_project]
 
         target_funds = original_funds + desired_increase
@@ -53,7 +53,7 @@ class EvalMetrics:
         num_voters, num_projects = self.model.voting_matrix.shape
         new_voting_matrix = self.model.voting_matrix.copy()
 
-        original_allocation = self.model.allocate_funds("median_aggregation")
+        original_allocation = self.model.allocate_funds("r3_median")
         original_funds = original_allocation[target_project]
 
         target_funds = original_funds + desired_increase
@@ -82,11 +82,11 @@ class EvalMetrics:
             results['desired_increase'].append(desired_increase)
 
             for voting_rule in self.model.voting_rules.keys():
-                if voting_rule == "mean_aggregation":
+                if voting_rule == "r2_mean":
                     bribery_cost = self.simulate_bribery_mean(target_project, desired_increase)
-                elif voting_rule == "median_aggregation":
+                elif voting_rule == "r3_median":
                     bribery_cost = self.simulate_bribery_median(target_project, desired_increase)
-                elif voting_rule == "quadratic_aggregation":
+                elif voting_rule == "r1_quadratic":
                     bribery_cost = self.simulate_bribery_quadratic(target_project, desired_increase)
                 else:
                     print(f"Bribery Cost Calculation Function for {voting_rule} is not defined in EvalMetrics")

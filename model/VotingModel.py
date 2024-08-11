@@ -39,7 +39,8 @@ class VotingModel(Model):
         return voting_rules
     
     def step(self):
-        self.voting_matrix = self.voter.vote(self.num_voters)
+        voting_matrix = self.voter.vote(self.num_voters)
+        self.voting_matrix = np.array(voting_matrix)
         return self.voting_matrix
 
     '''
