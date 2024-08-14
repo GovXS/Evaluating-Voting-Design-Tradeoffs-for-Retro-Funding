@@ -1,7 +1,7 @@
 import numpy as np
 
 QUORUM = 17
-MIN_AMOUNT = 1500
+MIN_AMOUNT = 0
 
 class VotingRules:
 
@@ -39,6 +39,41 @@ class VotingRules:
         
         return scaled_allocations
 
+    def majoritarian_moving_phantoms(self, voting_matrix, total_op_tokens, num_voters):
+        def f1_k(t, k, n):
+            if 0 <= t <= k / (n + 1):
+                return 0
+            elif k / (n + 1) < t < (k + 1) / (n + 1):
+                return t * (n + 1) - k
+            elif (k + 1) / (n + 1) <= t <= 1:
+                return 1
 
+        def median_with_phantoms(t_star):
+            F = [lambda t, k=k: f1_k(t, k, n) for k in range(n + 1)]
+            median_values = [
+                np.median([F[k](t_star) for k in range(n + 1)] + [votes[i][j] for i in range(n)])
+                for j in range(m)
+            ]
+            return np.median(median_values)
 
-    
+        def find_t_star():
+            low, high = 0.0, 1.0
+            epsilon = 1e-9  
+            while high - low > epsilon:
+                mid = (low + high) / 2
+                if np.sum([median_with_phantoms(mid) for j in range(m)]) > 1:
+                    high = mid
+                else:
+                    low = mid
+            return low
+
+        n, m = voting_matrix.shape
+        row_sums = voting_matrix.sum(axis=1, keepdims=True)
+        votes = voting_matrix / row_sums
+        t_star = find_t_star()
+        
+        distribution = np.array([median_with_phantoms(t_star) for j in range(m)])
+        best_distribution = distribution * (total_op_tokens / np.sum(distribution))
+        
+        return best_distribution
+        
