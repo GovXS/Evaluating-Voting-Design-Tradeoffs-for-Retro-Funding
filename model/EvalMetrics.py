@@ -300,3 +300,20 @@ class EvalMetrics:
                 results[f'{voting_rule}_social_welfare_avg_l1_distance'].append(average_distance)
 
         return pd.DataFrame(results)
+
+
+    def calculate_egalitarian_score(self, allocation, voting_matrix):
+        distances = np.linalg.norm(voting_matrix - allocation, ord=1, axis=1)
+        return np.max(distances)
+
+    def evaluate_egalitarian_score(self, num_rounds):
+        results = {'round': list(range(1, num_rounds + 1))}
+        for voting_rule in self.model.voting_rules.keys():
+            results[f'{voting_rule}_egalitarian_score'] = []
+        for round_num in range(num_rounds):
+            self.model.step()
+            for voting_rule in self.model.voting_rules.keys():
+                allocation = self.model.allocate_funds(voting_rule)
+                egalitarian_score = self.calculate_egalitarian_score(allocation, self.model.voting_matrix)
+                results[f'{voting_rule}_egalitarian_score'].append(egalitarian_score)
+        return pd.DataFrame(results)
