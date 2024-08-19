@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 
 class EvalMetrics:
@@ -120,6 +121,52 @@ class EvalMetrics:
                 results[f'{voting_rule}_gini_index'].append(gini_index)
         return pd.DataFrame(results)
 
+  
+
+    def lorenz_curve(self,allocation):
+        """Calculate and plot the Lorenz curve for a given allocation."""
+        sorted_allocation = np.sort(allocation)
+        cumulative_allocation = np.cumsum(sorted_allocation) / np.sum(sorted_allocation)
+        cumulative_allocation = np.insert(cumulative_allocation, 0, 0)  # Insert the origin (0,0)
+        return cumulative_allocation
+
+    def plot_lorenz_curves(self,allocations, voting_rules):
+        """Plot Lorenz curves for multiple voting rules."""
+        plt.figure(figsize=(8, 8))
+        
+        for voting_rule in voting_rules:
+            allocation = allocations[voting_rule]
+            lorenz_values = self.lorenz_curve(allocation)
+            plt.plot(np.linspace(0, 1, len(lorenz_values)), lorenz_values, label=voting_rule)
+        
+        # Line of equality
+        plt.plot([0, 1], [0, 1], color='black', linestyle='--')
+        
+        plt.xlabel('Cumulative Population Proportion')
+        plt.ylabel('Cumulative Funding Proportion')
+        plt.title('Lorenz Curve for Different Voting Rules')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+    def evaluate_and_plot_lorenz_curve(self, num_rounds):
+        """Evaluate Gini index and plot Lorenz curves for multiple voting rounds."""
+        allocations = {voting_rule: np.zeros(self.model.num_projects) for voting_rule in self.model.voting_rules.keys()}
+        
+        for round_num in range(num_rounds):
+            self.model.step()
+            for voting_rule in self.model.voting_rules.keys():
+                allocation = self.model.allocate_funds(voting_rule)
+                allocations[voting_rule] += allocation  # Aggregate allocation across rounds
+        
+        # Calculate the average allocation across rounds
+        for voting_rule in allocations:
+            allocations[voting_rule] /= num_rounds
+        
+        # Plot the Lorenz curves
+        self.plot_lorenz_curves(allocations, self.model.voting_rules.keys())
+
+
     # Ground Truth Alignment
     def generate_ground_truth(self, num_projects):
         ground_truth = np.random.rand(num_projects)
@@ -235,14 +282,22 @@ class EvalMetrics:
         return pd.DataFrame(results)
 
     # Robustness
-    def random_change_vote(self, vote, change_amount=0.01):
+    def random_change_vote(self, vote, change_amount=0.01,num_changes=None):
         """Modify the entire vote across all projects by a small, controlled amount."""
         new_vote = vote.copy()
-        min_change=0.001
+        min_change=0.00001
         max_change=0.1
-       
+        num_changes = 2
+    
+        # Randomly decide how many projects to change if num_changes is not specified
+        if num_changes is None:
+            num_changes = np.random.randint(1, self.model.num_projects + 1)
+        
+        # Randomly select which projects to change
+        change_indices = np.random.choice(self.model.num_projects, num_changes, replace=False)
+    
         # Iterate over all projects and randomly adjust each vote by a small amount
-        for i in range(self.model.num_projects):
+        for i in change_indices:
             change_value = np.random.randint(min_change*self.model.total_op_tokens, max_change*self.model.total_op_tokens)
             new_vote[i] = max(0, new_vote[i] + change_value)  # Ensure vote doesn't go below 0
         
@@ -269,11 +324,15 @@ class EvalMetrics:
             # Apply the same vote change across all voting rules
             for method in self.model.voting_rules.keys():
                 original_outcome = self.model.allocate_funds(method)
-
+                
                 # Create a new voting matrix with the modified vote
+                old_voting_matrix=self.model.voting_matrix.copy()
                 new_voting_matrix = self.model.voting_matrix.copy()
+                #print(f"before:{self.model.voting_matrix}")
                 new_voting_matrix[voter_idx] = new_vote
+                #print(f"before:{self.model.voting_matrix-new_voting_matrix}")
                 self.model.voting_matrix = new_voting_matrix
+                #print(f"during:{self.model.voting_matrix}")
 
                 # Calculate the outcome with the modified vote
                 new_outcome = self.model.allocate_funds(method)
@@ -282,6 +341,7 @@ class EvalMetrics:
 
                 # Restore the original vote for the next round
                 self.model.voting_matrix[voter_idx] = original_vote
+                #print(f"after:{self.model.voting_matrix-old_voting_matrix}")
 
         # Convert the results to a DataFrame
         robustness_df = pd.DataFrame(robustness_results)
