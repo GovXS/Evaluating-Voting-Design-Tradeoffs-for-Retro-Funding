@@ -235,30 +235,55 @@ class EvalMetrics:
         return pd.DataFrame(results)
 
     # Robustness
-    def random_change_vote(self, vote):
+    def random_change_vote(self, vote, change_amount=0.01):
+        """Modify the entire vote across all projects by a small, controlled amount."""
         new_vote = vote.copy()
-        change_idx = np.random.randint(0, self.model.num_projects)
-        new_vote[change_idx] = np.random.uniform(0, 1)
+        min_change=0.001
+        max_change=0.1
+       
+        # Iterate over all projects and randomly adjust each vote by a small amount
+        for i in range(self.model.num_projects):
+            change_value = np.random.randint(min_change*self.model.total_op_tokens, max_change*self.model.total_op_tokens)
+            new_vote[i] = max(0, new_vote[i] + change_value)  # Ensure vote doesn't go below 0
+        
         return new_vote
 
-    def calculate_distance(self, x, x_prime):
-        return np.linalg.norm(x - x_prime)
+    def calculate_l1_distance(self, x, x_prime):
+        """Calculate the L1 distance (Manhattan distance) between two vectors."""
+        return np.sum(np.abs(x - x_prime))
 
     def evaluate_robustness(self, num_rounds):
         robustness_results = {f"{method}_distances": [] for method in self.model.voting_rules.keys()}
-        for method in self.model.voting_rules.keys():
-            for _ in range(num_rounds):
+        robustness_results["changed_vote_l1_distances"] = []
+
+        for _ in range(num_rounds):
+            # Randomly select a voter and change their vote
+            voter_idx = np.random.randint(0, self.model.num_voters)
+            original_vote = self.model.voting_matrix[voter_idx].copy()
+            new_vote = self.random_change_vote(original_vote)
+
+            # Calculate the magnitude of the vote change
+            change_in_vote = np.sum(np.abs(new_vote - original_vote))
+            robustness_results["changed_vote_l1_distances"].append(change_in_vote)
+
+            # Apply the same vote change across all voting rules
+            for method in self.model.voting_rules.keys():
                 original_outcome = self.model.allocate_funds(method)
-                voter_idx = np.random.randint(0, self.model.num_voters)
-                original_vote = self.model.voting_matrix[voter_idx].copy()
-                new_vote = self.random_change_vote(original_vote)
+
+                # Create a new voting matrix with the modified vote
                 new_voting_matrix = self.model.voting_matrix.copy()
                 new_voting_matrix[voter_idx] = new_vote
                 self.model.voting_matrix = new_voting_matrix
+
+                # Calculate the outcome with the modified vote
                 new_outcome = self.model.allocate_funds(method)
-                distance = self.calculate_distance(original_outcome, new_outcome)
+                distance = self.calculate_l1_distance(original_outcome, new_outcome)
                 robustness_results[f"{method}_distances"].append(distance)
+
+                # Restore the original vote for the next round
                 self.model.voting_matrix[voter_idx] = original_vote
+
+        # Convert the results to a DataFrame
         robustness_df = pd.DataFrame(robustness_results)
         robustness_df["round"] = robustness_df.index + 1
         return robustness_df
