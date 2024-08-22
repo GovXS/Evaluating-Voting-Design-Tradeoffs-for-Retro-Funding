@@ -169,10 +169,14 @@ class EvalMetrics:
 
     # Ground Truth Alignment
     def generate_ground_truth(self, num_projects):
-        ground_truth = np.random.rand(num_projects)
-        ground_truth /= np.sum(ground_truth)
+        # Mallows model ground truth
+        ground_truth = np.random.multinomial(self.model.total_op_tokens, [1.0/self.model.num_projects] * self.model.num_projects)
+
+        #ground_truth = np.random.rand(num_projects)
+        #ground_truth /= np.sum(ground_truth)
         return ground_truth
 
+    # l1 distance here
     def calculate_hamming_distance(self, x, x_star, top_k):
         x_top_k = np.argsort(-x)[:top_k]
         x_star_top_k = np.argsort(-x_star)[:top_k]
@@ -185,43 +189,16 @@ class EvalMetrics:
 
         results = {'round': list(range(1, num_rounds + 1))}
         for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_hamming_distance'] = []
+            results[f'{voting_rule}_l1_distance'] = []
         for round_num in range(num_rounds):
             self.model.step()
             for voting_rule in self.model.voting_rules.keys():
                 allocation = self.model.allocate_funds(voting_rule)
                 allocation_normalized = allocation / np.sum(allocation)
-                hamming_distance = self.calculate_hamming_distance(allocation_normalized, ground_truth, top_k)
-                results[f'{voting_rule}_hamming_distance'].append(hamming_distance)
+                l1_distance = self.calculate_l1_distance(allocation, ground_truth)
+                results[f'{voting_rule}_l1_distance'].append(l1_distance)
         return pd.DataFrame(results)
 
-    # Group Strategyproofness
-    def utility(self, voter_preferences, outcome):
-        return -np.sum(np.abs(voter_preferences - outcome))
-
-    def evaluate_group_strategyproofness(self, coalition_size=3):
-        group_strategyproofness_results = []
-        for method in self.model.voting_rules.keys():
-            truthfully_voted_outcome = self.model.allocate_funds(method)
-            group_strategyproof = True
-            for _ in range(100):
-                coalition = np.random.choice(self.model.num_voters, coalition_size, replace=False)
-                original_utilities = [self.utility(self.model.voting_matrix[i], truthfully_voted_outcome) for i in coalition]
-                strategic_voting_matrix = self.model.voting_matrix.copy()
-                for i in coalition:
-                    strategic_voting_matrix[i] = np.random.rand(self.model.num_projects)
-                self.model.voting_matrix = strategic_voting_matrix
-                strategically_voted_outcome = self.model.allocate_funds(method)
-                new_utilities = [self.utility(self.model.voting_matrix[i], strategically_voted_outcome) for i in coalition]
-                if all(new_utilities[i] > original_utilities[i] for i in range(coalition_size)):
-                    group_strategyproof = False
-                    break
-                self.model.voting_matrix = strategic_voting_matrix
-            group_strategyproofness_results.append({
-                "voting_rule": method,
-                "group_strategyproof": group_strategyproof
-            })
-        return pd.DataFrame(group_strategyproofness_results)
 
     # Resistance to Control
     def add_remove_projects(self, project_to_manipulate, voting_rule, add):
@@ -366,7 +343,7 @@ class EvalMetrics:
                 results[f'{voting_rule}_social_welfare'].append(social_welfare)
         return pd.DataFrame(results)
 
-    def l1_distance(x, xi):
+    def l1_distance(self,x, xi):
         return np.sum(np.abs(x - xi))
 
     def evaluate_social_welfare_1(self,num_rounds):
@@ -381,7 +358,7 @@ class EvalMetrics:
                 total_distance = 0
                 for i in range(self.model.num_voters):
                     total_distance += self.l1_distance(outcome, self.model.voting_matrix[i])
-                average_distance = total_distance / model.num_voters
+                average_distance = total_distance /self. model.num_voters
                 results[f'{voting_rule}_social_welfare_avg_l1_distance'].append(average_distance)
 
         return pd.DataFrame(results)
