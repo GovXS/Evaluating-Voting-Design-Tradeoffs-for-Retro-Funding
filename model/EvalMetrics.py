@@ -326,30 +326,11 @@ class EvalMetrics:
         return robustness_df
 
     # Social Welfare
-    def calculate_social_welfare(self, allocation, voting_matrix):
-        n = voting_matrix.shape[0]
-        total_distance = np.sum(np.linalg.norm(voting_matrix - allocation, ord=1, axis=1))
-        return total_distance / n
 
-    def evaluate_social_welfare(self, num_rounds):
+    def evaluate_social_welfare(self,num_rounds):
         results = {'round': list(range(1, num_rounds + 1))}
         for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_social_welfare'] = []
-        for round_num in range(num_rounds):
-            self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
-                allocation = self.model.allocate_funds(voting_rule)
-                social_welfare = self.calculate_social_welfare(allocation, self.model.voting_matrix)
-                results[f'{voting_rule}_social_welfare'].append(social_welfare)
-        return pd.DataFrame(results)
-
-    def l1_distance(self,x, xi):
-        return np.sum(np.abs(x - xi))
-
-    def evaluate_social_welfare_1(self,num_rounds):
-        results = {'round': list(range(1, num_rounds + 1))}
-        for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_social_welfare'] = []
+            results[f'{voting_rule}_social_welfare_avg_l1_distance'] = []
 
         for round_num in range(num_rounds):
             self.model.step()   
@@ -357,7 +338,7 @@ class EvalMetrics:
                 outcome = self.model.allocate_funds(voting_rule)
                 total_distance = 0
                 for i in range(self.model.num_voters):
-                    total_distance += self.l1_distance(outcome, self.model.voting_matrix[i])
+                    total_distance += self.calculate_l1_distance(outcome, self.model.voting_matrix[i])
                 average_distance = total_distance /self. model.num_voters
                 results[f'{voting_rule}_social_welfare_avg_l1_distance'].append(average_distance)
 
