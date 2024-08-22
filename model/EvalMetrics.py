@@ -154,62 +154,30 @@ class EvalMetrics:
         denominator = m * cumulative_allocation[-1]
         return numerator / denominator
 
+    
     def evaluate_gini_index(self, num_rounds):
         results = {'round': list(range(1, num_rounds + 1))}
+        cumulative_allocations = {voting_rule: [] for voting_rule in self.model.voting_rules.keys()}
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_gini_index'] = []
+        
         for round_num in range(num_rounds):
             self.model.step()
             for voting_rule in self.model.voting_rules.keys():
                 allocation = self.model.allocate_funds(voting_rule)
                 gini_index = self.calculate_gini_index(allocation)
                 results[f'{voting_rule}_gini_index'].append(gini_index)
-        return pd.DataFrame(results)
+                
+                # Store the sorted cumulative allocations for the Lorenz curve
+                sorted_cumulative_allocation = np.cumsum(np.sort(allocation)) / np.sum(allocation)
+                cumulative_allocations[voting_rule].append(sorted_cumulative_allocation)
 
-  
+        # Average the cumulative allocations across rounds for the Lorenz curve
+        averaged_cumulative_allocations = {voting_rule: np.mean(cumulative_allocations[voting_rule], axis=0)
+                                           for voting_rule in self.model.voting_rules.keys()}
+        
+        return pd.DataFrame(results), averaged_cumulative_allocations
 
-    def lorenz_curve(self,allocation):
-        """Calculate and plot the Lorenz curve for a given allocation."""
-        sorted_allocation = np.sort(allocation)
-        cumulative_allocation = np.cumsum(sorted_allocation) / np.sum(sorted_allocation)
-        cumulative_allocation = np.insert(cumulative_allocation, 0, 0)  # Insert the origin (0,0)
-        return cumulative_allocation
-
-    def plot_lorenz_curves(self,allocations, voting_rules):
-        """Plot Lorenz curves for multiple voting rules."""
-        plt.figure(figsize=(8, 8))
-        
-        for voting_rule in voting_rules:
-            allocation = allocations[voting_rule]
-            lorenz_values = self.lorenz_curve(allocation)
-            plt.plot(np.linspace(0, 1, len(lorenz_values)), lorenz_values, label=voting_rule)
-        
-        # Line of equality
-        plt.plot([0, 1], [0, 1], color='black', linestyle='--')
-        
-        plt.xlabel('Cumulative Population Proportion')
-        plt.ylabel('Cumulative Funding Proportion')
-        plt.title('Lorenz Curve for Different Voting Rules')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-    def evaluate_and_plot_lorenz_curve(self, num_rounds):
-        """Evaluate Gini index and plot Lorenz curves for multiple voting rounds."""
-        allocations = {voting_rule: np.zeros(self.model.num_projects) for voting_rule in self.model.voting_rules.keys()}
-        
-        for round_num in range(num_rounds):
-            self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
-                allocation = self.model.allocate_funds(voting_rule)
-                allocations[voting_rule] += allocation  # Aggregate allocation across rounds
-        
-        # Calculate the average allocation across rounds
-        for voting_rule in allocations:
-            allocations[voting_rule] /= num_rounds
-        
-        # Plot the Lorenz curves
-        self.plot_lorenz_curves(allocations, self.model.voting_rules.keys())
 
 
     # Ground Truth Alignment
