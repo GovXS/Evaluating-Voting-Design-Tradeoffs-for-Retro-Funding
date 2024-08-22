@@ -14,6 +14,9 @@ class EvalMetrics:
             return self.simulate_bribery_median(target_project, desired_increase)
         elif method == "r1_quadratic":
             return self.simulate_bribery_quadratic(target_project, desired_increase)
+        elif method == "majoritarian_moving_phantoms":
+        # Placeholder or actual implementation for majoritarian_moving_phantoms
+            return self.simulate_bribery_majoritarian_moving_phantoms(target_project, desired_increase)
         else:
             raise ValueError(f"Unknown method for bribery simulation: {method}")
 
@@ -67,6 +70,48 @@ class EvalMetrics:
         bribery_cost = desired_increase
         return bribery_cost
 
+    def simulate_bribery_majoritarian_moving_phantoms(self, target_project, desired_increase):
+        # Implementation for this method
+        return 0  # Replace with actual calculation
+
+    def evaluate_bribery_1(self, num_rounds):
+        min_desired_increase = 0.01  # 1% increase
+        max_desired_increase = 0.5  # 50% increase
+        desired_increase_percentage = np.linspace(max_desired_increase / num_rounds, max_desired_increase, num_rounds)
+        results = {'round': list(range(1, num_rounds + 1))}
+        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
+        
+        for voting_rule in self.model.voting_rules.keys():
+            results[f'{voting_rule}_bribery_cost'] = []
+
+        for i in range(num_rounds):
+            self.model.step()
+
+            min_bribery_costs = {}
+            desired_increase_percentage_current_round=desired_increase_percentage[i]
+            results['desired_increase'].append(desired_increase_percentage_current_round)
+
+            for voting_rule in self.model.voting_rules.keys():
+                original_allocation = self.model.allocate_funds(voting_rule)
+                
+                min_bribery_cost = float('inf')
+                for project in range(self.model.num_projects):
+                    original_funds = original_allocation[project]
+                    desired_increase = original_funds * desired_increase_percentage_current_round
+                    
+                    bribery_cost = self.simulate_bribery(voting_rule, project, desired_increase)
+                    
+                    if bribery_cost < min_bribery_cost:
+                        min_bribery_cost = bribery_cost
+                
+                min_bribery_costs[voting_rule] = min_bribery_cost
+
+            for voting_rule, min_cost in min_bribery_costs.items():
+                results[f'{voting_rule}_bribery_cost'].append(min_cost)
+
+        final_results = pd.DataFrame(results)
+        return final_results
+        
     def evaluate_bribery(self, num_rounds):
         max_bribe = 1e6
         desired_increases = np.linspace(max_bribe / num_rounds, max_bribe, num_rounds)
