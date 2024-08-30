@@ -328,7 +328,17 @@ class EvalMetrics:
         for i in range(num_voters):
             potential_voting_matrix = self.model.voting_matrix.copy()
             potential_voting_matrix[voters_sorted_by_influence[:i+1], :] = 0
-            new_allocation = self.model.allocate_funds(voting_rule)
+
+            # Temporarily replace the voting matrix
+            original_matrix = self.model.voting_matrix
+            self.model.voting_matrix = potential_voting_matrix
+
+            try:
+                new_allocation = self.model.allocate_funds(voting_rule)
+            finally:
+                # Restore the original voting matrix
+                self.model.voting_matrix = original_matrix
+            
             new_funds = new_allocation[project]
 
             if new_funds >= target_funds:
@@ -349,7 +359,17 @@ class EvalMetrics:
             new_voter[project] = 1  # New voters give all their votes to the target project
 
             potential_voting_matrix = np.vstack([self.model.voting_matrix, new_voter])
-            new_allocation = self.model.allocate_funds(voting_rule)
+
+            # Temporarily replace the voting matrix
+            original_matrix = self.model.voting_matrix
+            self.model.voting_matrix = potential_voting_matrix
+
+            try:
+                new_allocation = self.model.allocate_funds(voting_rule)
+            finally:
+                # Restore the original voting matrix
+                self.model.voting_matrix = original_matrix
+            
             new_funds = new_allocation[project]
 
             if new_funds >= target_funds:
