@@ -213,64 +213,6 @@ class EvalMetrics:
         return pd.DataFrame(results)
 
 
-    # Resistance to Control
-    def add_remove_projects(self, project_to_manipulate, voting_rule, add):
-        original_allocation = self.model.allocate_funds(voting_rule)
-        current_funds = original_allocation[project_to_manipulate]
-        if add:
-            new_project = np.random.rand(self.model.num_voters, 1)
-            new_project /= new_project.sum(axis=0, keepdims=True)
-            self.model.voting_matrix = np.hstack((self.model.voting_matrix, new_project))
-            new_allocation = self.model.allocate_funds(voting_rule)
-            new_funds = new_allocation[project_to_manipulate]
-        else:
-            remove_idx = np.random.choice(self.model.num_projects, 1)
-            self.model.voting_matrix = np.delete(self.model.voting_matrix, remove_idx, axis=1)
-            new_allocation = self.model.allocate_funds(voting_rule)
-            new_funds = new_allocation[project_to_manipulate]
-        budget = abs(new_funds - current_funds) * self.model.num_voters
-        return budget, new_allocation
-
-    def add_remove_voters(self, project_to_manipulate, voting_rule, add):
-        original_allocation = self.model.allocate_funds(voting_rule)
-        current_funds = original_allocation[project_to_manipulate]
-        if add:
-            new_voter = np.random.rand(1, self.model.num_projects)
-            new_voter /= new_voter.sum(axis=1, keepdims=True)
-            self.model.voting_matrix = np.vstack((self.model.voting_matrix, new_voter))
-            new_allocation = self.model.allocate_funds(voting_rule)
-            new_funds = new_allocation[project_to_manipulate]
-        else:
-            remove_idx = np.random.choice(self.model.num_voters, 1)
-            self.model.voting_matrix = np.delete(self.model.voting_matrix, remove_idx, axis=0)
-            new_allocation = self.model.allocate_funds(voting_rule)
-            new_funds = new_allocation[project_to_manipulate]
-        budget = abs(new_funds - current_funds) * self.model.num_projects
-        return budget, new_allocation
-
-    def evaluate_control(self, num_rounds):
-        # Define control functions
-        control_functions = {
-            "add_projects": lambda m, p, vr: self.add_remove_projects(p, vr, True),
-            "remove_projects": lambda m, p, vr: self.add_remove_projects(p, vr, False),
-            "add_voters": lambda m, p, vr: self.add_remove_voters(p, vr, True),
-            "remove_voters": lambda m, p, vr: self.add_remove_voters(p, vr, False)
-        }
-
-        # Select a random project for manipulation
-        project_to_manipulate = np.random.randint(self.model.num_projects)
-
-        results = []
-        for _ in range(num_rounds):
-            self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
-                round_results = {'voting_rule': voting_rule}
-                for control_name, control_function in control_functions.items():
-                    budget, new_allocation = control_function(self.model, project_to_manipulate, voting_rule)
-                    round_results[control_name] = budget
-                results.append(round_results)
-        return pd.DataFrame(results)
-
     # Robustness
     def random_change_vote(self, vote, change_amount=0.01,num_changes=None):
         """Modify the entire vote across all projects by a small, controlled amount."""
@@ -373,3 +315,81 @@ class EvalMetrics:
                 egalitarian_score = self.calculate_egalitarian_score(allocation, self.model.voting_matrix)
                 results[f'{voting_rule}_egalitarian_score'].append(egalitarian_score)
         return pd.DataFrame(results)
+
+    def simulate_voter_removal(self, project, voting_rule, desired_increase):
+        num_voters, num_projects = self.model.voting_matrix.shape
+        original_allocation = self.model.allocate_funds(voting_rule)
+        original_funds = original_allocation[project]
+
+        target_funds = original_funds * (1 + desired_increase / 100)
+        current_votes = self.model.voting_matrix[:, project]
+        voters_sorted_by_influence = np.argsort(current_votes)[::-1]
+
+        for i in range(num_voters):
+            potential_voting_matrix = self.model.voting_matrix.copy()
+            potential_voting_matrix[voters_sorted_by_influence[:i+1], :] = 0
+            new_allocation = self.model.allocate_funds(voting_rule)
+            new_funds = new_allocation[project]
+
+            if new_funds >= target_funds:
+                return i + 1  # Number of voters removed
+
+        return np.inf  # Not possible to achieve the desired increase by removing voters
+
+    def simulate_voter_addition(self, project, voting_rule, desired_increase):
+        num_voters, num_projects = self.model.voting_matrix.shape
+        original_allocation = self.model.allocate_funds(voting_rule)
+        original_funds = original_allocation[project]
+
+        target_funds = original_funds * (1 + desired_increase / 100)
+        added_voters = 0
+
+        while True:
+            new_voter = np.zeros(num_projects)
+            new_voter[project] = 1  # New voters give all their votes to the target project
+
+            potential_voting_matrix = np.vstack([self.model.voting_matrix, new_voter])
+            new_allocation = self.model.allocate_funds(voting_rule)
+            new_funds = new_allocation[project]
+
+            if new_funds >= target_funds:
+                return added_voters + 1  # Number of voters added
+
+            added_voters += 1
+            self.model.voting_matrix = potential_voting_matrix
+
+    def evaluate_control(self, num_rounds, desired_increase):
+        """
+        Evaluate the resistance to control by adding or removing voters for a desired percentage increase in funding.
+        """
+        results = []
+
+        for round_num in range(num_rounds):
+            self.model.step()
+            for voting_rule in self.model.voting_rules.keys():
+                min_removal_cost = np.inf
+                min_addition_cost = np.inf
+                removal_possible = False
+
+                for project in range(self.model.num_projects):
+                    # Calculate the cost to remove voters
+                    removal_cost = self.simulate_voter_removal(project, voting_rule, desired_increase)
+                    if removal_cost < np.inf:
+                        removal_possible = True
+                        min_removal_cost = min(min_removal_cost, removal_cost)
+
+                    # Calculate the cost to add voters
+                    addition_cost = self.simulate_voter_addition(project, voting_rule, desired_increase)
+                    min_addition_cost = min(min_addition_cost, addition_cost)
+
+                results.append({
+                    'round': round_num + 1,
+                    'voting_rule': voting_rule,
+                    'min_removal_cost': min_removal_cost if removal_possible else "Not Possible",
+                    'min_addition_cost': min_addition_cost,
+                    'desired_increase': desired_increase
+                })
+
+        return pd.DataFrame(results)
+    
+    
