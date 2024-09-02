@@ -71,4 +71,61 @@ class VotingRules:
             best_distribution = distribution * (total_op_tokens / np.sum(distribution))
             return best_distribution
         
+    def r4_capped_median(self, voting_matrix, total_op_tokens, num_voters):
+
+        # K1 is the maximum number of tokens a single voter can allocate to a single project before redistribution is triggered.
+        K1 = 0.001 * total_op_tokens # 10% of total tokens
+        # K2 is the maximum median allocation a project can receive before redistribution is triggered.
+        K2 = 0.1 * total_op_tokens
+        # K3 is the minimum allocation required for a project to receive funding; projects below this threshold are eliminated, and their funds are redistributed.
+        K3 = 0.0001 * total_op_tokens
+        num_voters, num_projects = voting_matrix.shape
+
+        # Step 1: Cap at K1 and redistribute excess
+        capped_scores = np.minimum(voting_matrix, K1)
+        excess_scores = np.maximum(0, voting_matrix - K1)
         
+        redistributed_scores = capped_scores.copy()
+        for i in range(num_voters):
+            uncapped_projects = capped_scores[i] < K1
+            
+            # Ensure the shapes match before proceeding
+            if np.any(uncapped_projects):
+                uncapped_project_indices = np.where(uncapped_projects)[0]
+                relevant_capped_scores = capped_scores[i, uncapped_project_indices]
+                relevant_excess_scores = excess_scores[i, uncapped_project_indices]
+                
+                if np.sum(relevant_capped_scores) > 0:
+                    proportionate_excess = (relevant_excess_scores * relevant_capped_scores) / np.sum(relevant_capped_scores)
+                    redistributed_scores[i, uncapped_project_indices] += proportionate_excess
+
+        # Step 2: Calculate median scores
+        median_scores = np.median(redistributed_scores, axis=0)
+
+        # Step 3: Cap at K2 and redistribute excess
+        capped_median_scores = np.minimum(median_scores, K2)
+        excess_median = np.maximum(0, median_scores - K2)
+        total_excess_median = np.sum(excess_median)
+        
+        eligible_projects = capped_median_scores < K2
+        redistributed_median_scores = capped_median_scores.copy()
+        if np.any(eligible_projects) and np.sum(capped_median_scores[eligible_projects]) > 0:
+            redistributed_median_scores[eligible_projects] += (total_excess_median * capped_median_scores[eligible_projects]) / np.sum(capped_median_scores[eligible_projects])
+
+        # Step 4: Normalize to the budget 
+        normalized_scores = redistributed_median_scores / np.sum(redistributed_median_scores) * total_op_tokens
+
+        # Step 5: Eliminate projects with allocation less than K3 and redistribute
+        final_scores = normalized_scores.copy()
+        low_allocation_projects = normalized_scores < K3
+        if np.any(low_allocation_projects):
+            redistributed_amount = np.sum(normalized_scores[low_allocation_projects])
+            eligible_for_redistribution = normalized_scores >= K3
+            if np.any(eligible_for_redistribution) and np.sum(final_scores[eligible_for_redistribution]) > 0:
+                final_scores[eligible_for_redistribution] += (redistributed_amount * final_scores[eligible_for_redistribution]) / np.sum(final_scores[eligible_for_redistribution])
+            final_scores[low_allocation_projects] = 0
+        
+        # Final normalization
+        final_allocation = final_scores / np.sum(final_scores) * total_op_tokens
+
+        return final_allocation
