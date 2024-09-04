@@ -15,8 +15,9 @@ class EvalMetrics:
         elif method == "r1_quadratic":
             return self.simulate_bribery_quadratic(target_project, desired_increase)
         elif method == "majoritarian_moving_phantoms":
-        # Placeholder or actual implementation for majoritarian_moving_phantoms
             return self.simulate_bribery_majoritarian_moving_phantoms(target_project, desired_increase)
+        elif method == "r4_capped_median":
+            return self.simulate_bribery_capped_median(target_project, desired_increase)
         else:
             raise ValueError(f"Unknown method for bribery simulation: {method}")
 
@@ -70,11 +71,41 @@ class EvalMetrics:
         bribery_cost = desired_increase
         return bribery_cost
 
-    def simulate_bribery_majoritarian_moving_phantoms(self, target_project, desired_increase):
-        # Implementation for this method
-        return 0  # Replace with actual calculation
 
-    def evaluate_bribery_1(self, num_rounds):
+    # New bribery simulation for 'majoritarian_moving_phantoms'
+    def simulate_bribery_majoritarian_moving_phantoms(self, target_project, desired_increase):
+        num_voters, num_projects = self.model.voting_matrix.shape
+        original_allocation = self.model.allocate_funds("majoritarian_moving_phantoms")
+        original_funds = original_allocation[target_project]
+        target_funds = original_funds + desired_increase
+
+        for i in range(num_voters):
+            new_voting_matrix = self.model.voting_matrix.copy()
+            new_voting_matrix[:, target_project] += 1  # Increment votes for the target project
+            new_allocation = self.model.allocate_funds("majoritarian_moving_phantoms")
+            if new_allocation[target_project] >= target_funds:
+                return i + 1  # Number of voters manipulated
+
+        return np.inf  # Return infinity if bribery isn't possible
+
+    # New bribery simulation for 'r4_capped_median'
+    def simulate_bribery_capped_median(self, target_project, desired_increase):
+        num_voters, num_projects = self.model.voting_matrix.shape
+        original_allocation = self.model.allocate_funds("r4_capped_median")
+        original_funds = original_funds[target_project]
+        target_funds = original_funds + desired_increase
+
+        for i in range(num_voters):
+            new_voting_matrix = self.model.voting_matrix.copy()
+            new_voting_matrix[:, target_project] = np.minimum(new_voting_matrix[:, target_project] + 1, 500000)  # Cap the increment to K1
+            new_allocation = self.model.allocate_funds("r4_capped_median")
+            if new_allocation[target_project] >= target_funds:
+                return i + 1  # Number of voters manipulated
+
+        return np.inf  # Return infinity if bribery isn't possible
+
+
+    def evaluate_bribery(self, num_rounds):
         min_desired_increase = 0.01  # 1% increase
         max_desired_increase = 0.5  # 50% increase
         desired_increase_percentage = np.linspace(max_desired_increase / num_rounds, max_desired_increase, num_rounds)
@@ -112,37 +143,6 @@ class EvalMetrics:
         final_results = pd.DataFrame(results)
         return final_results
         
-    def evaluate_bribery(self, num_rounds):
-        max_bribe = 1e6
-        desired_increases = np.linspace(max_bribe / num_rounds, max_bribe, num_rounds)
-        results = {'round': list(range(1, num_rounds + 1))}
-        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
-        for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_bribery_cost'] = []
-
-        for i in range(num_rounds):
-            self.model.step()
-
-            target_project = np.random.randint(0, self.model.num_projects)  # Randomly select a target project
-            desired_increase = desired_increases[i]
-            results['desired_increase'].append(desired_increase)
-
-            for voting_rule in self.model.voting_rules.keys():
-                if voting_rule == "r2_mean":
-                    bribery_cost = self.simulate_bribery_mean(target_project, desired_increase)
-                elif voting_rule == "r3_median":
-                    bribery_cost = self.simulate_bribery_median(target_project, desired_increase)
-                elif voting_rule == "r1_quadratic":
-                    bribery_cost = self.simulate_bribery_quadratic(target_project, desired_increase)
-                else:
-                    print(f"Bribery Cost Calculation Function for {voting_rule} is not defined in EvalMetrics")
-                    bribery_cost = 0
-
-                results[f'{voting_rule}_bribery_cost'].append(bribery_cost)
-
-        final_results = pd.DataFrame(results)
-        return final_results
-
     # Gini Index
     def calculate_gini_index(self, allocation):
         m = len(allocation)
