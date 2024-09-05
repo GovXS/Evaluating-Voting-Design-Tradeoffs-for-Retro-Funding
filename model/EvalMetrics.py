@@ -113,10 +113,9 @@ class EvalMetrics:
         return np.inf  # Return infinity if bribery isn't possible
 
 
-
     def evaluate_bribery(self, num_rounds):
-        min_desired_increase = 0.01  # 1% increase
-        max_desired_increase = 0.5  # 50% increase
+        min_desired_increase = 0.00000001  # 1% increase
+        max_desired_increase = 0.05  # 50% increase
         desired_increase_percentage = np.linspace(max_desired_increase / num_rounds, max_desired_increase, num_rounds)
         results = {'round': list(range(1, num_rounds + 1))}
         results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
@@ -227,7 +226,7 @@ class EvalMetrics:
         new_vote = vote.copy()
         min_change=0.01*self.model.total_op_tokens
         max_change=0.3*self.model.total_op_tokens
-        num_changes = None
+        num_changes = 10
     
         # Randomly decide how many projects to change if num_changes is not specified
         if num_changes is None:
@@ -334,7 +333,7 @@ class EvalMetrics:
         print(f"Voting Rule: {voting_rule}: Original Funds for Project {project}: {original_funds}")
         print(f"Voting Rule: {voting_rule}: Target Funds for Project {project}: {target_funds}")
 
-        max_additional_voters = num_voters * 10  # Limit to avoid infinite loop
+        max_additional_voters = num_voters * 2  # Limit to avoid infinite loop
 
         # Create a copy of the original voting matrix to work with
         potential_voting_matrix = self.model.voting_matrix.copy()
@@ -384,13 +383,21 @@ class EvalMetrics:
             if current_num_voters == 0:
                 break  # No voters left to remove
 
-            # Sort voters by their current influence after each iteration??
+            # Sort voters by their current influence after each iteration?? reverse the list
+            #current_votes = potential_voting_matrix[:, project]
+            #voters_sorted_by_influence = np.argsort(current_votes)[::-1]
             current_votes = potential_voting_matrix[:, project]
-            voters_sorted_by_influence = np.argsort(current_votes)[::-1]
+            voters_sorted_by_influence = np.argsort(current_votes)
 
             # Remove the most influential voter for other projects
             potential_voting_matrix = np.delete(potential_voting_matrix, voters_sorted_by_influence[0], axis=0)
             current_num_voters -= 1
+
+            # **Exit early if voting matrix is empty**:
+            if potential_voting_matrix.shape[0] == 0:
+                print("No voters left in the matrix. Cannot proceed.")
+                return np.inf  # Exit early as no more voters are left to manipulate the project funds
+
 
             # Recalculate the allocation after voter removal
             original_matrix = self.model.voting_matrix
@@ -413,8 +420,6 @@ class EvalMetrics:
                 self.model.voting_matrix = original_matrix
 
         return np.inf  # Not possible to achieve the desired increase by removing voters
-
-
 
     def evaluate_control(self, num_rounds, desired_increase):
         """
