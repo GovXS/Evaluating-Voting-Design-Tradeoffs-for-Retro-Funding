@@ -6,17 +6,20 @@ QUORUM = 17
 class VotingRules:
 
     def r1_quadratic(self, voting_matrix, total_funds, num_voters):
+        num_voters, num_projects = voting_matrix.shape
         true_vote = np.sqrt(voting_matrix)
         sum_sqrt_tokens_per_project = np.sum(true_vote, axis=0)
         funds_allocated = (sum_sqrt_tokens_per_project / np.sum(sum_sqrt_tokens_per_project)) * total_funds
         return funds_allocated
 
     def r2_mean(self, voting_matrix, total_op_tokens, num_voters):
+        num_voters, num_projects = voting_matrix.shape
         total_votes = np.sum(voting_matrix, axis=0)
         mean_votes = total_votes / num_voters
         return mean_votes / np.sum(mean_votes) * total_op_tokens
 
     def r3_median(self, voting_matrix, total_op_tokens, num_voters):
+        num_voters, num_projects = voting_matrix.shape
         # Step 1: Calculate the median, ignoring zeros
         MIN_AMOUNT = 0
         def non_zero_median(column):
@@ -39,8 +42,9 @@ class VotingRules:
         scaled_allocations = (eligible_median_votes / np.sum(eligible_median_votes)) * total_op_tokens
         
         return scaled_allocations
-
+    
     def majoritarian_moving_phantoms(self, voting_matrix, total_op_tokens, num_voters):
+            num_voters, num_projects = voting_matrix.shape
             def f_k(t, k, num_voters):
                 if t <= k / (num_voters + 1):
                     return 0
@@ -70,16 +74,16 @@ class VotingRules:
             distribution = np.array([median_with_phantoms(t_star, j) for j in range(m)])
             best_distribution = distribution * (total_op_tokens / np.sum(distribution))
             return best_distribution
-        
+    
     def r4_capped_median(self, voting_matrix, total_op_tokens, num_voters):
+        num_voters, num_projects = voting_matrix.shape
 
         # K1 is the maximum number of tokens a single voter can allocate to a single project before redistribution is triggered.
-        K1 = 500000#0.01 * total_op_tokens # 10% of total tokens
+        K1 = 0.01 * total_op_tokens # 10% of total tokens
         # K2 is the maximum median allocation a project can receive before redistribution is triggered.
-        K2 = 500000# * total_op_tokens
+        K2 = 0.01 * total_op_tokens
         # K3 is the minimum allocation required for a project to receive funding; projects below this threshold are eliminated, and their funds are redistributed.
-        K3 = 1000#0.0001 * total_op_tokens
-        num_voters, num_projects = voting_matrix.shape
+        K3 = 0.001 * total_op_tokens
 
         # Step 1: Cap at K1 and redistribute excess
         capped_scores = np.minimum(voting_matrix, K1)

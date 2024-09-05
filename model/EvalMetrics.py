@@ -72,37 +72,46 @@ class EvalMetrics:
         return bribery_cost
 
 
-    # New bribery simulation for 'majoritarian_moving_phantoms'
     def simulate_bribery_majoritarian_moving_phantoms(self, target_project, desired_increase):
         num_voters, num_projects = self.model.voting_matrix.shape
         original_allocation = self.model.allocate_funds("majoritarian_moving_phantoms")
         original_funds = original_allocation[target_project]
         target_funds = original_funds + desired_increase
-
+        
+        votes_needed = 0
         for i in range(num_voters):
             new_voting_matrix = self.model.voting_matrix.copy()
-            new_voting_matrix[:, target_project] += 1  # Increment votes for the target project
+            
+            # Simulate the addition of phantom votes to the target project
+            new_voting_matrix[:, target_project] += 1  # Add phantom votes to target
+            
+            # Recalculate the allocation using the majoritarian moving phantoms rule
             new_allocation = self.model.allocate_funds("majoritarian_moving_phantoms")
             if new_allocation[target_project] >= target_funds:
                 return i + 1  # Number of voters manipulated
-
+        
         return np.inf  # Return infinity if bribery isn't possible
 
-    # New bribery simulation for 'r4_capped_median'
+
     def simulate_bribery_capped_median(self, target_project, desired_increase):
         num_voters, num_projects = self.model.voting_matrix.shape
         original_allocation = self.model.allocate_funds("r4_capped_median")
-        original_funds = original_funds[target_project]
+        original_funds = original_allocation[target_project]
         target_funds = original_funds + desired_increase
 
         for i in range(num_voters):
             new_voting_matrix = self.model.voting_matrix.copy()
-            new_voting_matrix[:, target_project] = np.minimum(new_voting_matrix[:, target_project] + 1, 500000)  # Cap the increment to K1
+            
+            # Add tokens to the target project while respecting the cap (K1)
+            new_voting_matrix[:, target_project] = np.minimum(new_voting_matrix[:, target_project] + 1, 500000)  # Cap the increment
+            
+            # Recalculate the allocation
             new_allocation = self.model.allocate_funds("r4_capped_median")
             if new_allocation[target_project] >= target_funds:
                 return i + 1  # Number of voters manipulated
 
         return np.inf  # Return infinity if bribery isn't possible
+
 
 
     def evaluate_bribery(self, num_rounds):
@@ -179,7 +188,6 @@ class EvalMetrics:
         return pd.DataFrame(results), averaged_cumulative_allocations
 
 
-
     # Ground Truth Alignment
     def generate_ground_truth(self, num_projects):
         # Mallows model ground truth
@@ -217,9 +225,9 @@ class EvalMetrics:
     def random_change_vote(self, vote, change_amount=0.01,num_changes=None):
         """Modify the entire vote across all projects by a small, controlled amount."""
         new_vote = vote.copy()
-        min_change=0.00001
-        max_change=0.1
-        num_changes = 2
+        min_change=0.01*self.model.total_op_tokens
+        max_change=0.3*self.model.total_op_tokens
+        num_changes = None
     
         # Randomly decide how many projects to change if num_changes is not specified
         if num_changes is None:
@@ -230,7 +238,7 @@ class EvalMetrics:
     
         # Iterate over all projects and randomly adjust each vote by a small amount
         for i in change_indices:
-            change_value = np.random.randint(min_change*self.model.total_op_tokens, max_change*self.model.total_op_tokens)
+            change_value = np.random.randint(min_change, max_change)
             new_vote[i] = max(0, new_vote[i] + change_value)  # Ensure vote doesn't go below 0
         
         return new_vote
@@ -316,49 +324,27 @@ class EvalMetrics:
                 results[f'{voting_rule}_egalitarian_score'].append(egalitarian_score)
         return pd.DataFrame(results)
 
-    def simulate_voter_removal(self, project, voting_rule, desired_increase):
-        num_voters, num_projects = self.model.voting_matrix.shape
-        original_allocation = self.model.allocate_funds(voting_rule)
-        original_funds = original_allocation[project]
-
-        target_funds = original_funds * (1 + desired_increase / 100)
-        current_votes = self.model.voting_matrix[:, project]
-        voters_sorted_by_influence = np.argsort(current_votes)[::-1]
-
-        for i in range(num_voters):
-            potential_voting_matrix = self.model.voting_matrix.copy()
-            potential_voting_matrix[voters_sorted_by_influence[:i+1], :] = 0
-
-            # Temporarily replace the voting matrix
-            original_matrix = self.model.voting_matrix
-            self.model.voting_matrix = potential_voting_matrix
-
-            try:
-                new_allocation = self.model.allocate_funds(voting_rule)
-            finally:
-                # Restore the original voting matrix
-                self.model.voting_matrix = original_matrix
-            
-            new_funds = new_allocation[project]
-
-            if new_funds >= target_funds:
-                return i + 1  # Number of voters removed
-
-        return np.inf  # Not possible to achieve the desired increase by removing voters
-
     def simulate_voter_addition(self, project, voting_rule, desired_increase):
         num_voters, num_projects = self.model.voting_matrix.shape
         original_allocation = self.model.allocate_funds(voting_rule)
         original_funds = original_allocation[project]
-
         target_funds = original_funds * (1 + desired_increase / 100)
         added_voters = 0
 
-        while True:
-            new_voter = np.zeros(num_projects)
-            new_voter[project] = 1  # New voters give all their votes to the target project
+        print(f"Voting Rule: {voting_rule}: Original Funds for Project {project}: {original_funds}")
+        print(f"Voting Rule: {voting_rule}: Target Funds for Project {project}: {target_funds}")
 
-            potential_voting_matrix = np.vstack([self.model.voting_matrix, new_voter])
+        max_additional_voters = num_voters * 10  # Limit to avoid infinite loop
+
+        # Create a copy of the original voting matrix to work with
+        potential_voting_matrix = self.model.voting_matrix.copy()
+
+        while added_voters < max_additional_voters:
+            new_voter = np.zeros(num_projects)
+            new_voter[project] = self.model.total_op_tokens  # New voters give all their votes to the target project
+
+            # Update the voting matrix cumulatively with the new voter
+            potential_voting_matrix = np.vstack([potential_voting_matrix, new_voter])
 
             # Temporarily replace the voting matrix
             original_matrix = self.model.voting_matrix
@@ -366,17 +352,69 @@ class EvalMetrics:
 
             try:
                 new_allocation = self.model.allocate_funds(voting_rule)
+                new_funds = new_allocation[project]
+
+                print(f"Voting Rule: {voting_rule}: New Funds for Project {project} after adding {added_voters + 1} voters: {new_funds}")
+
+                if new_funds >= target_funds:
+                    return added_voters + 1  # Number of voters added
+            finally:
+                # Always restore the original voting matrix
+                self.model.voting_matrix = original_matrix
+
+            added_voters += 1
+
+        return np.inf  # If no solution is found
+
+    def simulate_voter_removal(self, project, voting_rule, desired_increase):
+        num_voters, num_projects = self.model.voting_matrix.shape
+        original_allocation = self.model.allocate_funds(voting_rule)
+        original_funds = original_allocation[project]
+        target_funds = original_funds * (1 + desired_increase / 100)
+
+        # Make a copy of the voting matrix to modify during the simulation
+        potential_voting_matrix = self.model.voting_matrix.copy()
+
+        current_num_voters = num_voters
+
+        print(f"Voting Rule: {voting_rule} Original Funds for Project {project}: {original_funds}")
+        print(f"Voting Rule: {voting_rule} Target Funds for Project {project}: {target_funds}")
+
+        for i in range(num_voters):
+            if current_num_voters == 0:
+                break  # No voters left to remove
+
+            # Sort voters by their current influence after each iteration??
+            current_votes = potential_voting_matrix[:, project]
+            voters_sorted_by_influence = np.argsort(current_votes)[::-1]
+
+            # Remove the most influential voter for other projects
+            potential_voting_matrix = np.delete(potential_voting_matrix, voters_sorted_by_influence[0], axis=0)
+            current_num_voters -= 1
+
+            # Recalculate the allocation after voter removal
+            original_matrix = self.model.voting_matrix
+            self.model.voting_matrix = potential_voting_matrix
+
+            try:
+                new_allocation = self.model.allocate_funds(voting_rule)
+                new_funds = new_allocation[project]
+
+                print(f"Voting Rule: {voting_rule}: New Funds for Project {project} after removing {i + 1} voters: {new_funds}")
+
+                if new_funds >= target_funds:
+                    return i + 1  # Number of voters removed
+                
+                if new_funds <= original_funds * 0.5:
+                    break
+
             finally:
                 # Restore the original voting matrix
                 self.model.voting_matrix = original_matrix
-            
-            new_funds = new_allocation[project]
 
-            if new_funds >= target_funds:
-                return added_voters + 1  # Number of voters added
+        return np.inf  # Not possible to achieve the desired increase by removing voters
 
-            added_voters += 1
-            self.model.voting_matrix = potential_voting_matrix
+
 
     def evaluate_control(self, num_rounds, desired_increase):
         """
@@ -411,5 +449,3 @@ class EvalMetrics:
                 })
 
         return pd.DataFrame(results)
-    
-    
