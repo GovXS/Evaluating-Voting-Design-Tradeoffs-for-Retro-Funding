@@ -61,6 +61,17 @@ class VoterAgent(Agent):
                     new_vote[to_proj] += 1
             votes.append(new_vote)
         return votes
+    
+    def mallows_model_quick(self,n, m, K, alpha=0.5):
+
+        base_vote = np.random.dirichlet(np.ones(m), size=1) * K
+        votes = []
+        for i in range(n):
+            noisy_vote = (1 - alpha) * base_vote + alpha * np.random.dirichlet(np.ones(m), size=1) * K
+            votes.append(noisy_vote.flatten())
+        votes_matrix = np.array(votes)
+        return votes_matrix 
+
 
     def euclidean_model(self, n, m, K):
         projects = np.random.rand(m, 2)
