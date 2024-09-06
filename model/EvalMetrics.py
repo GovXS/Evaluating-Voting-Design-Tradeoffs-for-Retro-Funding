@@ -160,7 +160,7 @@ class EvalMetrics:
                 # Recalculate the allocation with the updated voting matrix
                 new_allocation = self.model.allocate_funds(voting_rule)
                 new_funds = new_allocation[target_project]
-                print(f'{voting_rule}, project {target_project} new_funds: {new_funds}, target_funds: {target_funds}')
+                #print(f'{voting_rule}, project {target_project} new_funds: {new_funds}, target_funds: {target_funds}')
 
                 # Check if the new allocation for the target project meets or exceeds the target
                 if new_funds >= target_funds or abs(new_funds - target_funds) < tolerance:
@@ -413,7 +413,7 @@ class EvalMetrics:
         print(f"Voting Rule: {voting_rule}: Original Funds for Project {project}: {original_funds}")
         print(f"Voting Rule: {voting_rule}: Target Funds for Project {project}: {target_funds}")
 
-        max_additional_voters = num_voters * 2  # Limit to avoid infinite loop
+        max_additional_voters = num_voters * 0.5  # Limit to avoid infinite loop
 
         # Create a copy of the original voting matrix to work with
         potential_voting_matrix = self.model.voting_matrix.copy()
@@ -477,7 +477,6 @@ class EvalMetrics:
             if potential_voting_matrix.shape[0] == 0:
                 print("No voters left in the matrix. Cannot proceed.")
                 return np.inf  # Exit early as no more voters are left to manipulate the project funds
-
 
             # Recalculate the allocation after voter removal
             original_matrix = self.model.voting_matrix
