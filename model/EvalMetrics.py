@@ -433,7 +433,7 @@ class EvalMetrics:
                 new_allocation = self.model.allocate_funds(voting_rule)
                 new_funds = new_allocation[project]
 
-                print(f"Voting Rule: {voting_rule}: New Funds for Project {project} after adding {added_voters + 1} voters: {new_funds}")
+                #print(f"Voting Rule: {voting_rule}: New Funds for Project {project} after adding {added_voters + 1} voters: {new_funds}")
 
                 if new_funds >= target_funds:
                     return added_voters + 1  # Number of voters added
@@ -456,8 +456,8 @@ class EvalMetrics:
 
         current_num_voters = num_voters
 
-        print(f"Voting Rule: {voting_rule} Original Funds for Project {project}: {original_funds}")
-        print(f"Voting Rule: {voting_rule} Target Funds for Project {project}: {target_funds}")
+        #print(f"Voting Rule: {voting_rule} Original Funds for Project {project}: {original_funds}")
+        #print(f"Voting Rule: {voting_rule} Target Funds for Project {project}: {target_funds}")
 
         for i in range(num_voters):
             if current_num_voters == 0:
@@ -487,7 +487,7 @@ class EvalMetrics:
                 new_allocation = self.model.allocate_funds(voting_rule)
                 new_funds = new_allocation[project]
 
-                print(f"Voting Rule: {voting_rule}: New Funds for Project {project} after removing {i + 1} voters: {new_funds}")
+                #print(f"Voting Rule: {voting_rule}: New Funds for Project {project} after removing {i + 1} voters: {new_funds}")
 
                 if new_funds >= target_funds:
                     return i + 1  # Number of voters removed
@@ -501,39 +501,6 @@ class EvalMetrics:
 
         return np.inf  # Not possible to achieve the desired increase by removing voters
 
-    def evaluate_control_1(self, num_rounds, desired_increase):
-        """
-        Evaluate the resistance to control by adding or removing voters for a desired percentage increase in funding.
-        """
-        results = []
-
-        for round_num in range(num_rounds):
-            self.model.step()
-            for voting_rule in self.model.voting_rules.keys():
-                min_removal_cost = np.inf
-                min_addition_cost = np.inf
-                removal_possible = False
-
-                for project in range(self.model.num_projects):
-                    # Calculate the cost to remove voters
-                    removal_cost = self.simulate_voter_removal(project, voting_rule, desired_increase)
-                    if removal_cost < np.inf:
-                        removal_possible = True
-                        min_removal_cost = min(min_removal_cost, removal_cost)
-
-                    # Calculate the cost to add voters
-                    addition_cost = self.simulate_voter_addition(project, voting_rule, desired_increase)
-                    min_addition_cost = min(min_addition_cost, addition_cost)
-
-                results.append({
-                    'round': round_num + 1,
-                    'voting_rule': voting_rule,
-                    'min_removal_cost': min_removal_cost if removal_possible else "Not Possible",
-                    'min_addition_cost': min_addition_cost,
-                    'desired_increase': desired_increase
-                })
-
-        return pd.DataFrame(results)
     
     def evaluate_control(self, num_rounds, desired_increase):
         """
