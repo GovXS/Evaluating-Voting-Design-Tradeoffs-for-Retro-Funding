@@ -57,10 +57,38 @@ class VotingModel(Model):
         results_df = self.compile_fund_allocations()
         return results_df
 
-    def allocate_funds(self, method):
+    def allocate_funds_1(self, method):
         if method not in self.voting_rules:
             raise ValueError(f"Unknown aggregation method: {method}")
         return self.voting_rules[method](self.voting_matrix, self.total_op_tokens, self.num_voters)
+    
+    def allocate_funds(self, method, voting_matrix=None):
+        """
+        Allocate funds using the specified voting rule.
+
+        Parameters:
+        - method: The voting rule method to be used (e.g., 'r1_quadratic', 'r2_mean', etc.).
+        - voting_matrix: (Optional) A custom voting matrix to use for fund allocation. 
+                        If None, the default self.voting_matrix will be used.
+
+        Returns:
+        - allocation: The fund allocation according to the voting rule.
+        """
+        # Use the provided voting_matrix if available, otherwise use the default self.voting_matrix
+        if voting_matrix is None:
+            voting_matrix = self.voting_matrix
+        
+        # Check if the method exists in the voting rules
+        if method not in self.voting_rules:
+            raise ValueError(f"Unknown aggregation method: {method}")
+        
+        if voting_matrix.shape != (self.num_voters, self.num_projects):
+            raise ValueError(f"Invalid voting_matrix shape. Expected {(self.num_voters, self.num_projects)} got {voting_matrix.shape}")
+
+
+        # Call the appropriate voting rule function with the selected matrix
+        return self.voting_rules[method](voting_matrix, self.total_op_tokens, self.num_voters)
+
 
     def add_voting_rule(self, name, func):
         self.voting_rules[name] = func

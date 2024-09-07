@@ -15,7 +15,7 @@ class VoterAgent(Agent):
         if self.voter_type == 'rn_model':
             return self.optimized_rn_model(num_voters, self.num_projects, self.total_op_tokens, alpha=2)  # Specify alpha as needed
         elif self.voter_type == 'mallows_model':
-            return self.mallows_model(num_voters, self.num_projects, self.total_op_tokens)
+            return self.mallows_model_quick(num_voters, self.num_projects, self.total_op_tokens)
         elif self.voter_type == 'euclidean_model':
             return self.euclidean_model(num_voters, self.num_projects, self.total_op_tokens)
         elif self.voter_type == 'multinomial_model':

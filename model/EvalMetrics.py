@@ -1,128 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+  
+from joblib import Parallel, delayed
 
 class EvalMetrics:
     def __init__(self, model):
         self.model = model
 
-    # Bribery Cost
-    def simulate_bribery(self, method, target_project, desired_increase):
-        if method == "r2_mean":
-            return self.simulate_bribery_mean(target_project, desired_increase)
-        elif method == "r3_median":
-            return self.simulate_bribery_median(target_project, desired_increase)
-        elif method == "r1_quadratic":
-            return self.simulate_bribery_quadratic(target_project, desired_increase)
-        elif method == "majoritarian_moving_phantoms":
-            return self.simulate_bribery_majoritarian_moving_phantoms(target_project, desired_increase)
-        elif method == "r4_capped_median":
-            return self.simulate_bribery_capped_median(target_project, desired_increase)
-        else:
-            raise ValueError(f"Unknown method for bribery simulation: {method}")
-
-    def simulate_bribery_mean(self, target_project, desired_increase):
-        num_voters, num_projects = self.model.voting_matrix.shape
-        new_voting_matrix = self.model.voting_matrix.copy()
-
-        original_allocation = self.model.allocate_funds("r2_mean")
-        original_funds = original_allocation[target_project]
-
-        target_funds = original_funds + desired_increase
-        total_required_votes = target_funds * num_voters
-
-        current_votes = np.sum(new_voting_matrix[:, target_project])
-        votes_needed = total_required_votes - current_votes
-
-        bribery_cost = votes_needed
-        return bribery_cost
-
-    def simulate_bribery_quadratic(self, target_project, desired_increase):
-        num_voters, num_projects = self.model.voting_matrix.shape
-        new_voting_matrix = self.model.voting_matrix.copy()
-
-        original_allocation = self.model.allocate_funds("r1_quadratic")
-        original_funds = original_allocation[target_project]
-
-        target_funds = original_funds + desired_increase
-        total_required_votes = (target_funds * np.sum(original_allocation)) ** 0.5
-
-        current_votes = np.sum(new_voting_matrix[:, target_project] ** 2)
-        votes_needed = total_required_votes - np.sqrt(current_votes)
-        votes_needed = votes_needed ** 2
-
-        bribery_cost = votes_needed
-        return bribery_cost
-
-    def simulate_bribery_median(self, target_project, desired_increase):
-        num_voters, num_projects = self.model.voting_matrix.shape
-        new_voting_matrix = self.model.voting_matrix.copy()
-
-        original_allocation = self.model.allocate_funds("r3_median")
-        original_funds = original_allocation[target_project]
-
-        target_funds = original_funds + desired_increase
-        votes = new_voting_matrix[:, target_project]
-        current_median_vote = np.median(votes)
-
-        total_required_votes = target_funds * self.model.num_voters / self.model.total_op_tokens
-        votes_needed = total_required_votes - current_median_vote
-
-        bribery_cost = desired_increase
-        return bribery_cost
-
-    def simulate_bribery_majoritarian_moving_phantoms(self, target_project, desired_increase):
-        bribery_cost=0
-
-        return bribery_cost
-
-
-    def simulate_bribery_capped_median(self, target_project, desired_increase):
-        
-        bribery_cost =0
-
-        return bribery_cost
-    
-    def evaluate_bribery_1(self, num_rounds,desired_increase_percentage):
-        #min_desired_increase = 0.00000001  # 1% increase
-        #max_desired_increase = 0.05  # 50% increase
-        #desired_increase_percentage = np.linspace(max_desired_increase / num_rounds, max_desired_increase, num_rounds)
-        results = {'round': list(range(1, num_rounds + 1))}
-        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
-        
-        for voting_rule in self.model.voting_rules.keys():
-            results[f'{voting_rule}_bribery_cost'] = []
-
-        for i in range(num_rounds):
-            self.model.step()
-
-            min_bribery_costs = {}
-            desired_increase_percentage_current_round=desired_increase_percentage
-            results['desired_increase'].append(desired_increase_percentage_current_round)
-
-            for voting_rule in self.model.voting_rules.keys():
-                original_allocation = self.model.allocate_funds(voting_rule)
-                
-                min_bribery_cost = float('inf')
-                for project in range(self.model.num_projects):
-                    original_funds = original_allocation[project]
-                    desired_increase = original_funds * desired_increase_percentage_current_round
-                    
-                    bribery_cost = self.simulate_bribery(voting_rule, project, desired_increase)
-                    
-                    if bribery_cost < min_bribery_cost:
-                        min_bribery_cost = bribery_cost
-                
-                min_bribery_costs[voting_rule] = min_bribery_cost
-
-            for voting_rule, min_cost in min_bribery_costs.items():
-                results[f'{voting_rule}_bribery_cost'].append(min_cost)
-
-        final_results = pd.DataFrame(results)
-        return final_results
-    
-
-    def simulate_bribery_generic(self, voting_rule, target_project, desired_increase,tolerance=10):
+    def simulate_bribery_generic(self, voting_rule, target_project, desired_increase):
         """
         Generalized bribery simulation for any voting rule.
         
@@ -140,6 +26,7 @@ class EvalMetrics:
         original_allocation = self.model.allocate_funds(voting_rule)
         original_funds = original_allocation[target_project]
         
+        tolerance=0.0001*self.model.total_op_tokens
         # Step 2: Calculate the target funds with the desired increase
         target_funds = original_funds + desired_increase
         
@@ -539,3 +426,202 @@ class EvalMetrics:
         # Convert results to DataFrame
         final_results = pd.DataFrame(results)
         return final_results
+
+
+    def simulate_bribery_generic_optimized(self, voting_rule, target_project, desired_increase, tolerance=0.0001):
+        """
+        Optimized Generalized bribery simulation for any voting rule.
+        
+        Parameters:
+        - voting_rule: The voting rule method (e.g., 'r1_quadratic', 'r2_mean', etc.)
+        - target_project: The project that we are targeting for bribery.
+        - desired_increase: The percentage increase we want in the target project's allocation.
+        - tolerance: Minimal acceptable difference between new_funds and target_funds.
+
+        Returns:
+        - bribery_cost: The total additional votes required (bribery cost).
+        """
+        num_voters, num_projects = self.model.voting_matrix.shape
+        original_allocation = self.model.allocate_funds(voting_rule)
+        original_funds = original_allocation[target_project]
+        
+        tolerance = 0.0001 * self.model.total_op_tokens
+        # Step 2: Calculate the target funds with the desired increase
+        target_funds = original_funds + desired_increase
+        
+        # Step 3: Initialize the bribery cost and make a copy of the voting matrix
+        bribery_cost = 0
+        new_voting_matrix = self.model.voting_matrix.copy()
+        original_matrix = self.model.voting_matrix.copy()  # Save the original matrix
+        
+        no_progress_iterations = 0
+        max_no_progress_iterations = 5
+        prev_funds = original_funds  
+        prev_diff = float('inf')
+        large_step = 0.10 * np.sum(original_matrix[:, target_project])  # Start with a 10% increase
+        
+        try:
+            while True:
+                # Temporarily assign the updated matrix to self.model.voting_matrix
+                self.model.voting_matrix = new_voting_matrix
+                
+                # Recalculate the allocation with the updated voting matrix
+                new_allocation = self.model.allocate_funds(voting_rule)
+                new_funds = new_allocation[target_project]
+                funds_diff = abs(new_funds - target_funds)
+                
+                # Check if the new allocation meets or exceeds the target
+                if new_funds >= target_funds or funds_diff < tolerance:
+                    break
+
+                # Check for diminishing returns or no progress
+                if abs(new_funds - prev_funds) < tolerance or funds_diff >= prev_diff:
+                    no_progress_iterations += 1
+                    if no_progress_iterations >= max_no_progress_iterations:
+                        bribery_cost = self.model.total_op_tokens
+                        print(f"Bribery cost infinite for project {target_project} and voting rule {voting_rule}")
+                        break
+                else:
+                    no_progress_iterations = 0  # Reset if there was progress
+
+                # Add an initial large step (10% of current votes), then reduce it if needed
+                additional_votes = large_step if funds_diff > tolerance * 10 else 0.01 * np.sum(original_matrix[:, target_project])
+                new_voting_matrix[:, target_project] += additional_votes
+                
+                prev_funds = new_funds
+                prev_diff = funds_diff
+                
+                # Accumulate the additional votes into the bribery cost
+                bribery_cost += additional_votes
+
+        finally:
+            # Restore the original voting matrix
+            self.model.voting_matrix = original_matrix
+
+        return bribery_cost
+
+
+    def evaluate_bribery_optimized(self, num_rounds, desired_increase_percentage):
+        """
+        Optimized Bribery evaluation with optimized simulation.
+        
+        Parameters:
+        - num_rounds: Number of rounds for the evaluation.
+        - desired_increase_percentage: The desired increase percentage for the project allocation.
+        
+        Returns:
+        - final_results: DataFrame containing bribery costs for each voting rule.
+        """
+        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
+        
+        for voting_rule in self.model.voting_rules.keys():
+            results[f'{voting_rule}_bribery_cost'] = []
+
+        for i in range(num_rounds):
+            self.model.step()
+            min_bribery_costs = {}
+            results['desired_increase'].append(desired_increase_percentage)
+
+            for voting_rule in self.model.voting_rules.keys():
+                min_bribery_cost = float('inf')
+                for project in range(self.model.num_projects):
+                    original_allocation = self.model.allocate_funds(voting_rule)
+                    original_funds = original_allocation[project]
+                    desired_increase = original_funds * desired_increase_percentage
+                    
+                    bribery_cost = self.simulate_bribery_generic_optimized(voting_rule, project, desired_increase)
+                    
+                    if bribery_cost < min_bribery_cost:
+                        min_bribery_cost = bribery_cost
+                
+                min_bribery_costs[voting_rule] = min_bribery_cost
+
+            for voting_rule, min_cost in min_bribery_costs.items():
+                results[f'{voting_rule}_bribery_cost'].append(min_cost)
+
+        final_results = pd.DataFrame(results)
+        return final_results
+
+
+
+    def evaluate_vev(self, num_rounds=100, r_min=90, r_max=99):
+        """
+        Evaluate the Voter Extractable Value (VEV) for a given voting rule.
+
+        Parameters:
+        - num_rounds: Number of instances to compute VEV across different vote profiles.
+        - r_min: Minimum percentage allocation to the specific project (default: 90%).
+        - r_max: Maximum percentage allocation to the specific project (default: 99%).
+
+        Returns:
+        - VEV_results: DataFrame containing the VEV for each instance and voting rule.
+        """
+        results = {
+            'rounds': list(range(1, num_rounds + 1)),
+            'voting_rule': [],
+            'max_vev': []
+        }
+        
+        for instance in range(num_rounds):
+            self.model.step()  # Simulate a new vote profile
+
+            for voting_rule in self.model.voting_rules.keys():
+                max_vev = float('-inf')  # Track the maximum VEV for this rule
+
+                # Get the original allocation using the voting rule
+                original_allocation = self.model.allocate_funds(voting_rule)
+
+                for voter in range(self.model.num_voters):
+                    for project in range(self.model.num_projects):
+                        # Iterate through r values from r_min to r_max (90% to 99%)
+                        for r in np.linspace(r_min / 100, r_max / 100, 10):
+                            # Create a modified vote for this voter and project
+                            modified_vote_matrix = self.model.voting_matrix.copy()
+                            modified_vote_matrix[voter] = self.modify_vote(voter, project, r)
+                            
+                            # Apply the modified vote profile to get new allocation
+                            new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
+                            
+                            # Calculate the L1 distance between original and new allocation
+                            l1_distance = np.sum(np.abs(original_allocation - new_allocation))
+                            
+                            # Update the maximum VEV if this is the largest skewness
+                            if l1_distance > max_vev:
+                                max_vev = l1_distance
+
+                # Log the maximum VEV for this instance and voting rule
+                results['voting_rule'].append(voting_rule)
+                results['max_vev'].append(max_vev)
+
+        # Create a DataFrame to store results
+        VEV_results = pd.DataFrame(results)
+        return VEV_results
+
+
+    def modify_vote(self, voter, project, r):
+        """
+        Modify the vote of voter `i` by allocating r% of their funds to project `k`.
+        The remainder is distributed equally across the other projects.
+        
+        Parameters:
+        - voter: Index of the voter whose vote will be modified.
+        - project: Index of the project where the majority of the funds will go.
+        - r: The percentage of total funds allocated to the selected project.
+
+        Returns:
+        - modified_vote: The new vote profile for the voter with modified allocations.
+        """
+        total_funds = self.model.total_op_tokens
+        num_projects = self.model.num_projects
+
+        # Allocate r% of funds to the selected project
+        modified_vote = np.zeros(num_projects)
+        modified_vote[project] = r * total_funds
+
+        # Distribute the remaining (1 - r)% equally across the other projects
+        remaining_funds = (1 - r) * total_funds
+        for other_project in range(num_projects):
+            if other_project != project:
+                modified_vote[other_project] = remaining_funds / (num_projects - 1)
+
+        return modified_vote
