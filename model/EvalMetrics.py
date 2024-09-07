@@ -388,7 +388,7 @@ class EvalMetrics:
         return np.inf  # Not possible to achieve the desired increase by removing voters
 
     
-    def evaluate_control(self, num_rounds, desired_increase):
+    def evaluate_control(self, num_rounds, desired_increase=20):
         """
         Evaluate the resistance to control by adding or removing voters for a desired percentage increase in funding.
         """
@@ -501,7 +501,7 @@ class EvalMetrics:
         return bribery_cost
 
 
-    def evaluate_bribery_optimized(self, num_rounds, desired_increase_percentage):
+    def evaluate_bribery_optimized(self, num_rounds, desired_increase_percentage=1):
         """
         Optimized Bribery evaluation with optimized simulation.
         
@@ -557,12 +557,12 @@ class EvalMetrics:
         - VEV_results: DataFrame containing the VEV for each instance and voting rule.
         """
         results = {
-            'rounds': list(range(1, num_rounds + 1)),
-            'voting_rule': [],
-            'max_vev': []
+            'round': [],        # Store round info for each instance and rule
+            'voting_rule': [],  # Store the voting rule for each instance
+            'max_vev': []       # Store the maximum VEV for each instance
         }
         
-        for instance in range(num_rounds):
+        for instance in range(1, num_rounds + 1):  # Loop through rounds
             self.model.step()  # Simulate a new vote profile
 
             for voting_rule in self.model.voting_rules.keys():
@@ -579,7 +579,7 @@ class EvalMetrics:
                             modified_vote_matrix = self.model.voting_matrix.copy()
                             modified_vote_matrix[voter] = self.modify_vote(voter, project, r)
                             
-                            # Apply the modified vote profile to get new allocation
+                            # Apply the modified vote profile to get a new allocation
                             new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
                             
                             # Calculate the L1 distance between original and new allocation
@@ -590,12 +590,14 @@ class EvalMetrics:
                                 max_vev = l1_distance
 
                 # Log the maximum VEV for this instance and voting rule
-                results['voting_rule'].append(voting_rule)
-                results['max_vev'].append(max_vev)
+                results['round'].append(instance)  # Add round number dynamically
+                results['voting_rule'].append(voting_rule)  # Add the voting rule
+                results['max_vev'].append(max_vev)  # Add the maximum VEV
 
         # Create a DataFrame to store results
         VEV_results = pd.DataFrame(results)
         return VEV_results
+
 
 
     def modify_vote(self, voter, project, r):
