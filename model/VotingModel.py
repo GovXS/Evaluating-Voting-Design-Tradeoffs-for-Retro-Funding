@@ -82,8 +82,8 @@ class VotingModel(Model):
         if method not in self.voting_rules:
             raise ValueError(f"Unknown aggregation method: {method}")
         
-        if voting_matrix.shape != (self.num_voters, self.num_projects):
-            raise ValueError(f"Invalid voting_matrix shape. Expected {(self.num_voters, self.num_projects)} got {voting_matrix.shape}")
+        #if voting_matrix.shape != (self.num_voters, self.num_projects):
+        #    raise ValueError(f"Invalid voting_matrix shape. Expected {(self.num_voters, self.num_projects)} got {voting_matrix.shape}")
 
 
         # Call the appropriate voting rule function with the selected matrix

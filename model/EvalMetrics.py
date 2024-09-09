@@ -191,8 +191,8 @@ class EvalMetrics:
     def random_change_vote(self, vote, change_amount=0.01,num_changes=None):
         """Modify the entire vote across all projects by a small, controlled amount."""
         new_vote = vote.copy()
-        min_change=0.01*self.model.total_op_tokens
-        max_change=0.3*self.model.total_op_tokens
+        min_change=0.001 * self.model.total_op_tokens
+        max_change=0.03 * self.model.total_op_tokens
         num_changes = 10
     
         # Randomly decide how many projects to change if num_changes is not specified
@@ -559,7 +559,8 @@ class EvalMetrics:
         results = {
             'round': [],        # Store round info for each instance and rule
             'voting_rule': [],  # Store the voting rule for each instance
-            'max_vev': []       # Store the maximum VEV for each instance
+            'max_vev': [],
+            'project_max_vev':[]       # Store the maximum VEV for each instance
         }
         
         for instance in range(1, num_rounds + 1):  # Loop through rounds
@@ -568,31 +569,39 @@ class EvalMetrics:
             for voting_rule in self.model.voting_rules.keys():
                 max_vev = float('-inf')  # Track the maximum VEV for this rule
 
+                project_max_vev = float('-inf') 
+
                 # Get the original allocation using the voting rule
                 original_allocation = self.model.allocate_funds(voting_rule)
+                #project_original_allocation = original_allocation[project]
 
                 for voter in range(self.model.num_voters):
                     for project in range(self.model.num_projects):
+                        project_original_allocation = original_allocation[project]
                         # Iterate through r values from r_min to r_max (90% to 99%)
-                        for r in np.linspace(r_min / 100, r_max / 100, 10):
+                        for r in np.linspace(r_min / 100, r_max / 100, 5):
                             # Create a modified vote for this voter and project
                             modified_vote_matrix = self.model.voting_matrix.copy()
                             modified_vote_matrix[voter] = self.modify_vote(voter, project, r)
                             
                             # Apply the modified vote profile to get a new allocation
                             new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
+                            project_new_allocation=new_allocation[project]
                             
                             # Calculate the L1 distance between original and new allocation
                             l1_distance = np.sum(np.abs(original_allocation - new_allocation))
-                            
+                            project_allocation_difference=project_new_allocation-project_original_allocation
                             # Update the maximum VEV if this is the largest skewness
                             if l1_distance > max_vev:
                                 max_vev = l1_distance
+                            if project_allocation_difference > project_max_vev:
+                                project_max_vev = project_allocation_difference
 
                 # Log the maximum VEV for this instance and voting rule
                 results['round'].append(instance)  # Add round number dynamically
                 results['voting_rule'].append(voting_rule)  # Add the voting rule
                 results['max_vev'].append(max_vev)  # Add the maximum VEV
+                results['project_max_vev'].append(project_max_vev)
 
         # Create a DataFrame to store results
         VEV_results = pd.DataFrame(results)

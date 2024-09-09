@@ -79,9 +79,9 @@ class VotingRules:
         num_voters, num_projects = voting_matrix.shape
 
         # K1 is the maximum number of tokens a single voter can allocate to a single project before redistribution is triggered.
-        K1 = 0.1 * total_op_tokens # 10% of total tokens
+        K1 = 0.0167 * total_op_tokens # 10% of total tokens
         # K2 is the maximum median allocation a project can receive before redistribution is triggered.
-        K2 = 0.1 * total_op_tokens
+        K2 = 0.0167 * total_op_tokens
         # K3 is the minimum allocation required for a project to receive funding; projects below this threshold are eliminated, and their funds are redistributed.
         K3 = 0.000001 * total_op_tokens
 
