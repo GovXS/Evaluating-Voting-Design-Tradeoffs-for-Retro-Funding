@@ -215,7 +215,7 @@ class EvalMetrics:
         """Calculate the L1 distance (Manhattan distance) between two vectors."""
         return np.sum(np.abs(x - x_prime))
 
-    def evaluate_robustness(self, min_change_param=0.001,max_chnage_param=0.03,num_rounds=100):
+    def evaluate_robustness(self, min_change_param=0.001,max_change_param=0.03,num_rounds=100):
         robustness_results = {f"{method}_distances": [] for method in self.model.voting_rules.keys()}
         robustness_results["changed_vote_l1_distances"] = []
 
@@ -223,7 +223,7 @@ class EvalMetrics:
             # Randomly select a voter and change their vote
             voter_idx = np.random.randint(0, self.model.num_voters)
             original_vote = self.model.voting_matrix[voter_idx].copy()
-            new_vote = self.random_change_vote(original_vote,min_change_param,max_chnage_param)
+            new_vote = self.random_change_vote(original_vote,min_change_param,max_change_param)
 
             # Calculate the magnitude of the vote change
             change_in_vote = np.sum(np.abs(new_vote - original_vote))

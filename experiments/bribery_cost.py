@@ -69,7 +69,7 @@ for i, desired_increase_percentage in enumerate(desired_increase_percentages, 1)
 
 # Display the results after the loop
 print(bribery_results)
-output_path=os.path.join(output_dir, 'bribery_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv')
+output_path=os.path.join(output_dir, f'bribery_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv')
 
 bribery_results.to_csv(output_path, index=False)
 
@@ -77,6 +77,6 @@ bribery_results.to_csv(output_path, index=False)
 # %%
 bribery_results.head(100)
 print("Bribery experiment Completed")
-print("Results saved to {output_path}")
+print(f"Results saved to {output_path}")
 
 
