@@ -481,14 +481,19 @@ class EvalMetrics:
                             # Calculate the L1 distance between original and new allocation
                             l1_distance = np.sum(np.abs(original_allocation - new_allocation))
                             project_allocation_difference=project_new_allocation-project_original_allocation
+
+                            print(f"In round {instance} and voting rule {voting_rule} For {project} and voter {voter} for max increase percentage {r}, l1 distance is {l1_distance} between project allocation {project_original_allocation} and project new allocation {project_new_allocation} with absolute differnce {project_allocation_difference} ")
+                            print(f"Max vev= {max_vev} max_project_venv= {project_max_vev} project_allocation_differnce= {project_allocation_difference} ")
                             # Update the maximum VEV if this is the largest skewness
                             if l1_distance > max_vev:
                                 max_vev = l1_distance
                             if project_allocation_difference > project_max_vev:
                                 project_max_vev = project_allocation_difference
-                            if project_new_allocation > project_max_new_allocation:
                                 project_max_new_allocation = project_new_allocation
                                 project_max_original_allocation = project_original_allocation
+                            #if project_new_allocation > project_max_new_allocation:
+                            #    project_max_new_allocation = project_new_allocation
+                            #    project_max_original_allocation = project_original_allocation
 
                 # Log the maximum VEV for this instance and voting rule
                 results['round'].append(instance)  # Add round number dynamically
@@ -502,7 +507,6 @@ class EvalMetrics:
         # Create a DataFrame to store results
         VEV_results = pd.DataFrame(results)
         return VEV_results
-
 
 
     def modify_vote(self, voter, project, r):
