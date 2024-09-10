@@ -188,11 +188,11 @@ class EvalMetrics:
 
 
     # Robustness
-    def random_change_vote(self, vote, change_amount=0.01,num_changes=None):
+    def random_change_vote(self, vote, min_change_param,max_change_param,num_changes=None):
         """Modify the entire vote across all projects by a small, controlled amount."""
         new_vote = vote.copy()
-        min_change=0.001 * self.model.total_op_tokens
-        max_change=0.03 * self.model.total_op_tokens
+        min_change=min_change_param * self.model.total_op_tokens
+        max_change=max_change_param * self.model.total_op_tokens
         num_changes = 10
     
         # Randomly decide how many projects to change if num_changes is not specified
@@ -213,7 +213,7 @@ class EvalMetrics:
         """Calculate the L1 distance (Manhattan distance) between two vectors."""
         return np.sum(np.abs(x - x_prime))
 
-    def evaluate_robustness(self, num_rounds):
+    def evaluate_robustness(self, min_change_param=0.001,max_chnage_param=0.03,num_rounds=100):
         robustness_results = {f"{method}_distances": [] for method in self.model.voting_rules.keys()}
         robustness_results["changed_vote_l1_distances"] = []
 
@@ -221,7 +221,7 @@ class EvalMetrics:
             # Randomly select a voter and change their vote
             voter_idx = np.random.randint(0, self.model.num_voters)
             original_vote = self.model.voting_matrix[voter_idx].copy()
-            new_vote = self.random_change_vote(original_vote)
+            new_vote = self.random_change_vote(original_vote,min_change_param,max_chnage_param)
 
             # Calculate the magnitude of the vote change
             change_in_vote = np.sum(np.abs(new_vote - original_vote))
@@ -445,7 +445,10 @@ class EvalMetrics:
             'round': [],        # Store round info for each instance and rule
             'voting_rule': [],  # Store the voting rule for each instance
             'max_vev': [],
-            'project_max_vev':[]       # Store the maximum VEV for each instance
+            'project_max_vev':[],
+            'project_original_allocation':[],
+            'project_new_allocation':[],
+            'project_max_allocation_percentage':[]       # Store the maximum VEV for each instance
         }
         
         for instance in range(1, num_rounds + 1):  # Loop through rounds
@@ -454,7 +457,9 @@ class EvalMetrics:
             for voting_rule in self.model.voting_rules.keys():
                 max_vev = float('-inf')  # Track the maximum VEV for this rule
 
-                project_max_vev = float('-inf') 
+                project_max_vev = float('-inf')
+                project_max_allocation = float('-inf')
+                project_max_allocation_percentage = float('-inf')  
 
                 # Get the original allocation using the voting rule
                 original_allocation = self.model.allocate_funds(voting_rule)
@@ -481,12 +486,17 @@ class EvalMetrics:
                                 max_vev = l1_distance
                             if project_allocation_difference > project_max_vev:
                                 project_max_vev = project_allocation_difference
+                            if project_new_allocation > project_max_allocation:
+                                project_max_allocation = project_new_allocation
+                                project_max_allocation_percentage/self.model.total_op_tokens
 
                 # Log the maximum VEV for this instance and voting rule
                 results['round'].append(instance)  # Add round number dynamically
                 results['voting_rule'].append(voting_rule)  # Add the voting rule
                 results['max_vev'].append(max_vev)  # Add the maximum VEV
                 results['project_max_vev'].append(project_max_vev)
+                results['project_original_allocation'].append(project_max_allocation)
+                results['project_new_allocation'].append(project_max_vev)
 
         # Create a DataFrame to store results
         VEV_results = pd.DataFrame(results)

@@ -55,7 +55,7 @@ for i, desired_increase_percentage in enumerate(desired_increase_percentages, 1)
     print(f"Iteration {i}/{iterations} with desired_increase_percentage: {desired_increase_percentage}")
 
     # Evaluate bribery costs for the current desired increase percentage
-    bribery_results_df = eval_metrics.evaluate_bribery_optimized(num_rounds, desired_increase_percentage)
+    bribery_results_df = eval_metrics.evaluate_bribery(num_rounds, desired_increase_percentage)
 
     # Calculate the average bribery cost for each voting rule over all rounds
     avg_bribery_costs = bribery_results_df.mean()
