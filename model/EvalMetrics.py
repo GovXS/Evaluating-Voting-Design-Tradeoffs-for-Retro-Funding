@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from tqdm import tqdm
+import time
   
 from joblib import Parallel, delayed
 
@@ -464,36 +466,44 @@ class EvalMetrics:
                 # Get the original allocation using the voting rule
                 original_allocation = self.model.allocate_funds(voting_rule)
                 #project_original_allocation = original_allocation[project]
+                num_iterations = self.model.num_voters * self.model.num_projects * 5  # 5 comes from np.linspace    
+                with tqdm(total=num_iterations) as pbar:
+                    for voter in range(self.model.num_voters):
+                        for project in range(self.model.num_projects):
+                            project_original_allocation = original_allocation[project]
+                            # Iterate through r values from r_min to r_max (90% to 99%)
+                            for r in np.linspace(r_min / 100, r_max / 100, 5):
+                                # Create a modified vote for this voter and project
+                                start_time = time.time()
+                                modified_vote_matrix = self.model.voting_matrix.copy()
+                                modified_vote_matrix[voter] = self.modify_vote(voter, project, r)
+                                
+                                # Apply the modified vote profile to get a new allocation
+                                new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
+                                project_new_allocation=new_allocation[project]
+                                
+                                # Calculate the L1 distance between original and new allocation
+                                l1_distance = np.sum(np.abs(original_allocation - new_allocation))
+                                project_allocation_difference=project_new_allocation-project_original_allocation
 
-                for voter in range(self.model.num_voters):
-                    for project in range(self.model.num_projects):
-                        project_original_allocation = original_allocation[project]
-                        # Iterate through r values from r_min to r_max (90% to 99%)
-                        for r in np.linspace(r_min / 100, r_max / 100, 5):
-                            # Create a modified vote for this voter and project
-                            modified_vote_matrix = self.model.voting_matrix.copy()
-                            modified_vote_matrix[voter] = self.modify_vote(voter, project, r)
-                            
-                            # Apply the modified vote profile to get a new allocation
-                            new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
-                            project_new_allocation=new_allocation[project]
-                            
-                            # Calculate the L1 distance between original and new allocation
-                            l1_distance = np.sum(np.abs(original_allocation - new_allocation))
-                            project_allocation_difference=project_new_allocation-project_original_allocation
+                                elapsed_time = time.time() - start_time
+                                print(f"[Round {instance}] [Voter {voter}/{self.model.num_voters}] [Project {project}/{self.model.num_projects}] "
+                                f"r={r:.2f} L1={l1_distance:.4f} Allocation Diff={project_allocation_difference:.4f} "
+                                f"Max VEV={max_vev:.4f} Elapsed Time: {elapsed_time:.2f}s")
 
-                            print(f"In round {instance} and voting rule {voting_rule} For {project} and voter {voter} for max increase percentage {r}, l1 distance is {l1_distance} between project allocation {project_original_allocation} and project new allocation {project_new_allocation} with absolute differnce {project_allocation_difference} ")
-                            print(f"Max vev= {max_vev} max_project_venv= {project_max_vev} project_allocation_differnce= {project_allocation_difference} ")
-                            # Update the maximum VEV if this is the largest skewness
-                            if l1_distance > max_vev:
-                                max_vev = l1_distance
-                            if project_allocation_difference > project_max_vev:
-                                project_max_vev = project_allocation_difference
-                                project_max_new_allocation = project_new_allocation
-                                project_max_original_allocation = project_original_allocation
-                            #if project_new_allocation > project_max_new_allocation:
-                            #    project_max_new_allocation = project_new_allocation
-                            #    project_max_original_allocation = project_original_allocation
+
+                                # Progress bar update
+                                pbar.update(1)
+                                # Update the maximum VEV if this is the largest skewness
+                                if l1_distance > max_vev:
+                                    max_vev = l1_distance
+                                if project_allocation_difference > project_max_vev:
+                                    project_max_vev = project_allocation_difference
+                                    project_max_new_allocation = project_new_allocation
+                                    project_max_original_allocation = project_original_allocation
+                                #if project_new_allocation > project_max_new_allocation:
+                                #    project_max_new_allocation = project_new_allocation
+                                #    project_max_original_allocation = project_original_allocation
 
                 # Log the maximum VEV for this instance and voting rule
                 results['round'].append(instance)  # Add round number dynamically
