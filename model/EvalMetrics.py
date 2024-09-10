@@ -446,8 +446,8 @@ class EvalMetrics:
             'voting_rule': [],  # Store the voting rule for each instance
             'max_vev': [],
             'project_max_vev':[],
-            'project_original_allocation':[],
-            'project_new_allocation':[],
+            'project_max_original_allocation':[],
+            'project_max_new_allocation':[],
             'project_max_allocation_percentage':[]       # Store the maximum VEV for each instance
         }
         
@@ -458,8 +458,8 @@ class EvalMetrics:
                 max_vev = float('-inf')  # Track the maximum VEV for this rule
 
                 project_max_vev = float('-inf')
-                project_max_allocation = float('-inf')
-                project_max_allocation_percentage = float('-inf')  
+                project_max_new_allocation = float('-inf')
+                project_max_original_allocation  = float('-inf')
 
                 # Get the original allocation using the voting rule
                 original_allocation = self.model.allocate_funds(voting_rule)
@@ -486,17 +486,18 @@ class EvalMetrics:
                                 max_vev = l1_distance
                             if project_allocation_difference > project_max_vev:
                                 project_max_vev = project_allocation_difference
-                            if project_new_allocation > project_max_allocation:
-                                project_max_allocation = project_new_allocation
-                                project_max_allocation_percentage/self.model.total_op_tokens
+                            if project_new_allocation > project_max_new_allocation:
+                                project_max_new_allocation = project_new_allocation
+                                project_max_original_allocation = project_original_allocation
 
                 # Log the maximum VEV for this instance and voting rule
                 results['round'].append(instance)  # Add round number dynamically
                 results['voting_rule'].append(voting_rule)  # Add the voting rule
                 results['max_vev'].append(max_vev)  # Add the maximum VEV
                 results['project_max_vev'].append(project_max_vev)
-                results['project_original_allocation'].append(project_max_allocation)
-                results['project_new_allocation'].append(project_max_vev)
+                results['project_max_original_allocation'].append(project_max_original_allocation)
+                results['project_max_new_allocation'].append(project_max_new_allocation)
+                results['project_max_allocation_percentage'].append(project_max_new_allocation/self.model.total_op_tokens)
 
         # Create a DataFrame to store results
         VEV_results = pd.DataFrame(results)
