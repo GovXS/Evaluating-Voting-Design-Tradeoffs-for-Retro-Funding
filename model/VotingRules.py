@@ -75,7 +75,7 @@ class VotingRules:
             best_distribution = distribution * (total_op_tokens / np.sum(distribution))
             return best_distribution
     
-    def r4_capped_median(voting_matrix, total_op_tokens, num_voters):
+    def r4_capped_median(self,voting_matrix, total_op_tokens, num_voters):
         num_voters, num_projects = voting_matrix.shape
 
         # K1 is the maximum number of tokens a single voter can allocate to a single project before redistribution is triggered.

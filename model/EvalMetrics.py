@@ -38,7 +38,11 @@ class EvalMetrics:
         original_matrix = self.model.voting_matrix.copy()  # Save the original matrix
         max_no_progress_iterations=5
         no_progress_iterations = 0
-        prev_funds = original_funds  
+        prev_funds = original_funds
+        #print(f"--- Bribery Simulation Debugging ---")
+        #print(f"Original Funds: {original_funds}")
+        #print(f"Desired Increase: {desired_increase}")
+        #print(f"Target Funds: {target_funds}")  
 
         try:
             
@@ -50,9 +54,11 @@ class EvalMetrics:
                 new_allocation = self.model.allocate_funds(voting_rule)
                 new_funds = new_allocation[target_project]
                 #print(f'{voting_rule}, project {target_project} new_funds: {new_funds}, target_funds: {target_funds}')
+                #print(f"New Funds for project {target_project}: {new_funds}")
 
                 # Check if the new allocation for the target project meets or exceeds the target
                 if new_funds >= target_funds or abs(new_funds - target_funds) < tolerance:
+                    print(f"Target met. Final Funds: {new_funds}, Bribery Cost: {bribery_cost}")
                     break
 
                 
@@ -67,8 +73,10 @@ class EvalMetrics:
                     no_progress_iterations = 0  # Reset if there was progress
                 
                 # Add a small, fixed amount of additional votes (say 0.5% of the original votes)
-                additional_votes = 0.01 * np.sum(original_matrix[:, target_project])
+                additional_votes = 0.05 * np.sum(original_matrix[:, target_project])
                 new_voting_matrix[:, target_project] += additional_votes
+
+                #print(f"Additional Votes: {additional_votes}, Bribery Cost So Far: {bribery_cost}")
 
                 prev_funds = new_funds
                 
@@ -82,45 +90,61 @@ class EvalMetrics:
         return bribery_cost
 
     
-    def evaluate_bribery(self, num_rounds,desired_increase_percentage):
-        #min_desired_increase = 0.00000001  # 1% increase
-        #max_desired_increase = 0.05  # 50% increase
-        #desired_increase_percentage = np.linspace(max_desired_increase / num_rounds, max_desired_increase, num_rounds)
-        results = {'round': list(range(1, num_rounds + 1))}
+    def evaluate_bribery(self, num_rounds, desired_increase_percentage):
+        """
+        Evaluate the bribery costs for increasing the allocation to a project by a desired percentage.
+        """
         results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
         
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_bribery_cost'] = []
 
-        for i in range(num_rounds):
-            self.model.step()
+        # Track the overall progress for the number of rounds
+        with tqdm(total=num_rounds, desc="Bribery Evaluation Progress", unit="round") as round_progress_bar:
+            for i in range(num_rounds):
+                print(f"\n--- Round {i + 1}/{num_rounds} ---")
+                self.model.step()  # Simulate the next round
+                desired_increase_percentage_current_round = desired_increase_percentage
+                results['desired_increase'].append(desired_increase_percentage_current_round)
 
-            min_bribery_costs = {}
-            desired_increase_percentage_current_round=desired_increase_percentage
-            results['desired_increase'].append(desired_increase_percentage_current_round)
+                # Progress bar for voting rules within a round
+                for voting_rule in tqdm(self.model.voting_rules.keys(), desc=f"Round {i + 1}: Processing Voting Rules", leave=False, unit="rule"):
+                    original_allocation = self.model.allocate_funds(voting_rule)
+                    min_bribery_cost = float('inf')
 
-            for voting_rule in self.model.voting_rules.keys():
-                original_allocation = self.model.allocate_funds(voting_rule)
-                
-                min_bribery_cost = float('inf')
-                for project in range(self.model.num_projects):
-                    original_funds = original_allocation[project]
-                    desired_increase = original_funds * desired_increase_percentage_current_round
-                    
-                    bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
-                    
-                    if bribery_cost < min_bribery_cost:
-                        min_bribery_cost = bribery_cost
-                
-                min_bribery_costs[voting_rule] = min_bribery_cost
+                    # Track progress for projects
+                    for project in range(self.model.num_projects):
+                        start_time = time.time()
+                        
+                        original_funds = original_allocation[project]
+                        desired_increase = original_funds * desired_increase_percentage_current_round
 
-            for voting_rule, min_cost in min_bribery_costs.items():
-                results[f'{voting_rule}_bribery_cost'].append(min_cost)
+                        # Simulate bribery for the current project
+                        bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
+                        elapsed_time = time.time() - start_time
 
+                        # Log progress for each project
+                        print(f"[Round {i + 1}] [Project {project + 1}/{self.model.num_projects}] "
+                            f"Voting Rule: {voting_rule}, Desired Increase: {desired_increase:.4f}, "
+                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s")
+
+                        # Update the minimum bribery cost for the current voting rule
+                        if bribery_cost < min_bribery_cost:
+                            min_bribery_cost = bribery_cost
+
+                    # Append the bribery cost for the current voting rule
+                    results[f'{voting_rule}_bribery_cost'].append(min_bribery_cost)
+
+                # Update the round progress bar after completing all voting rules
+                round_progress_bar.update(1)
+
+        # Convert results to a DataFrame
         final_results = pd.DataFrame(results)
+        print("\nAll rounds completed. Final results:\n", final_results)
         return final_results
+    
 
-    # Gini Index
+        # Gini Index
     def calculate_gini_index(self, allocation):
         m = len(allocation)
         if m == 0:
@@ -215,45 +239,72 @@ class EvalMetrics:
         """Calculate the L1 distance (Manhattan distance) between two vectors."""
         return np.sum(np.abs(x - x_prime))
 
-    def evaluate_robustness(self, min_change_param=0.001,max_change_param=0.03,num_rounds=100):
+    def evaluate_robustness(self, min_change_param=0.001, max_change_param=0.03, num_rounds=100):
+        """
+        Evaluate the robustness of the voting system by randomly changing a voter's vote and measuring the impact 
+        across different voting rules.
+        
+        Parameters:
+        - min_change_param: Minimum amount by which the vote can change.
+        - max_change_param: Maximum amount by which the vote can change.
+        - num_rounds: Number of rounds to simulate.
+
+        Returns:
+        - robustness_df: DataFrame containing the L1 distances for each voting rule and the changed vote distances.
+        """
+        # Initialize results dictionary
         robustness_results = {f"{method}_distances": [] for method in self.model.voting_rules.keys()}
         robustness_results["changed_vote_l1_distances"] = []
 
-        for _ in range(num_rounds):
-            # Randomly select a voter and change their vote
-            voter_idx = np.random.randint(0, self.model.num_voters)
-            original_vote = self.model.voting_matrix[voter_idx].copy()
-            new_vote = self.random_change_vote(original_vote,min_change_param,max_change_param)
+        # Track the overall progress for the number of rounds
+        with tqdm(total=num_rounds, desc="Robustness Evaluation Progress", unit="round") as round_progress_bar:
+            for round_num in range(num_rounds):
+                print(f"\n--- Round {round_num + 1}/{num_rounds} ---")
 
-            # Calculate the magnitude of the vote change
-            change_in_vote = np.sum(np.abs(new_vote - original_vote))
-            robustness_results["changed_vote_l1_distances"].append(change_in_vote)
+                # Randomly select a voter and change their vote
+                voter_idx = np.random.randint(0, self.model.num_voters)
+                original_vote = self.model.voting_matrix[voter_idx].copy()
+                new_vote = self.random_change_vote(original_vote, min_change_param, max_change_param)
 
-            # Apply the same vote change across all voting rules
-            for method in self.model.voting_rules.keys():
-                original_outcome = self.model.allocate_funds(method)
-                
-                # Create a new voting matrix with the modified vote
-                old_voting_matrix=self.model.voting_matrix.copy()
-                new_voting_matrix = self.model.voting_matrix.copy()
-                #print(f"before:{self.model.voting_matrix}")
-                new_voting_matrix[voter_idx] = new_vote
-                #print(f"before:{self.model.voting_matrix-new_voting_matrix}")
-                self.model.voting_matrix = new_voting_matrix
-                #print(f"during:{self.model.voting_matrix}")
+                # Calculate the magnitude of the vote change
+                change_in_vote = np.sum(np.abs(new_vote - original_vote))
+                robustness_results["changed_vote_l1_distances"].append(change_in_vote)
 
-                # Calculate the outcome with the modified vote
-                new_outcome = self.model.allocate_funds(method)
-                distance = self.calculate_l1_distance(original_outcome, new_outcome)
-                robustness_results[f"{method}_distances"].append(distance)
+                print(f"[Round {round_num + 1}] Voter {voter_idx} changed their vote (L1 change: {change_in_vote:.4f})")
 
-                # Restore the original vote for the next round
-                self.model.voting_matrix[voter_idx] = original_vote
-                #print(f"after:{self.model.voting_matrix-old_voting_matrix}")
+                # Apply the same vote change across all voting rules
+                for method in tqdm(self.model.voting_rules.keys(), desc=f"Processing Voting Rules (Round {round_num + 1})", leave=False, unit="rule"):
+                    # Original outcome
+                    original_outcome = self.model.allocate_funds(method)
+                    
+                    # Create a new voting matrix with the modified vote
+                    new_voting_matrix = self.model.voting_matrix.copy()
+                    new_voting_matrix[voter_idx] = new_vote
+                    self.model.voting_matrix = new_voting_matrix
+
+                    # Calculate the outcome with the modified vote
+                    start_time = time.time()
+                    new_outcome = self.model.allocate_funds(method)
+                    elapsed_time = time.time() - start_time
+
+                    # Calculate the L1 distance between the original and new outcomes
+                    distance = self.calculate_l1_distance(original_outcome, new_outcome)
+                    robustness_results[f"{method}_distances"].append(distance)
+
+                    # Log the result for the current method
+                    print(f"[Round {round_num + 1}] [Voting Rule: {method}] L1 Distance: {distance:.4f} (Time: {elapsed_time:.2f}s)")
+
+                    # Restore the original voting matrix for the next round
+                    self.model.voting_matrix[voter_idx] = original_vote
+
+                # Update the round progress bar after completing all voting rules
+                round_progress_bar.update(1)
 
         # Convert the results to a DataFrame
         robustness_df = pd.DataFrame(robustness_results)
         robustness_df["round"] = robustness_df.index + 1
+
+        print("\nAll rounds completed. Final results:\n", robustness_df)
         return robustness_df
 
     # Social Welfare
@@ -299,8 +350,8 @@ class EvalMetrics:
         target_funds = original_funds * (1 + desired_increase / 100)
         added_voters = 0
 
-        print(f"Voting Rule: {voting_rule}: Original Funds for Project {project}: {original_funds}")
-        print(f"Voting Rule: {voting_rule}: Target Funds for Project {project}: {target_funds}")
+        #print(f"Voting Rule: {voting_rule}: Original Funds for Project {project}: {original_funds}")
+        #print(f"Voting Rule: {voting_rule}: Target Funds for Project {project}: {target_funds}")
 
         max_additional_voters = num_voters * 0.5  # Limit to avoid infinite loop
 
@@ -395,22 +446,30 @@ class EvalMetrics:
         Evaluate the resistance to control by adding or removing voters for a desired percentage increase in funding.
         """
         results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
-        
+
         # Initialize columns for removal and addition costs for each voting rule
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_min_removal_cost'] = []
             results[f'{voting_rule}_min_addition_cost'] = []
 
+        num_iterations = num_rounds * self.model.num_voters * self.model.num_projects
+
+        # Outer loop for the number of rounds
         for round_num in range(num_rounds):
-            self.model.step()
+            print(f"\n--- Round {round_num + 1}/{num_rounds} ---")
+            self.model.step()  # Simulate the next round
             results['desired_increase'].append(desired_increase)
 
-            for voting_rule in self.model.voting_rules.keys():
+            # Track progress for each round
+            for voting_rule in tqdm(self.model.voting_rules.keys(), desc=f"Processing Voting Rules (Round {round_num + 1})", unit="rule"):
                 min_removal_cost = np.inf
                 min_addition_cost = np.inf
                 removal_possible = False
 
+                # Track progress for each project
                 for project in range(self.model.num_projects):
+                    project_start_time = time.time()
+
                     # Calculate the cost to remove voters
                     removal_cost = self.simulate_voter_removal(project, voting_rule, desired_increase)
                     if removal_cost < np.inf:
@@ -421,16 +480,21 @@ class EvalMetrics:
                     addition_cost = self.simulate_voter_addition(project, voting_rule, desired_increase)
                     min_addition_cost = min(min_addition_cost, addition_cost)
 
+                    # Log progress for each voter-project combination
+                    elapsed_time = time.time() - project_start_time
+                    print(f"[Round {round_num + 1}] [Project {project + 1}/{self.model.num_projects}] "
+                        f"Voting Rule: {voting_rule}, Removal Cost: {removal_cost:.4f}, "
+                        f"Addition Cost: {addition_cost:.4f}, Time: {elapsed_time:.2f}s")
+
                 # Append the removal and addition costs for the current voting rule
                 results[f'{voting_rule}_min_removal_cost'].append(min_removal_cost if removal_possible else "Not Possible")
                 results[f'{voting_rule}_min_addition_cost'].append(min_addition_cost)
 
-        # Convert results to DataFrame
+        # Convert results to a DataFrame
         final_results = pd.DataFrame(results)
+        print("\nAll rounds completed. Final results:\n", final_results)
         return final_results
-
-
-    
+        
     def evaluate_vev(self, num_rounds=100, r_min=90, r_max=99):
         """
         Evaluate the Voter Extractable Value (VEV) for a given voting rule.
