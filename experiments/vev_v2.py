@@ -15,8 +15,8 @@ from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
-num_voters = 144
-num_projects = 600
+num_voters = 40
+num_projects = 100
 total_op_tokens = 30e6
 voter_type = 'mallows_model'
 quorum = 17
@@ -54,7 +54,7 @@ def run_parallel_simulation(num_rounds, num_workers=4, model_params=None):
 # Main execution
 if __name__ == '__main__':
     num_workers = mp.cpu_count()  # Use the number of available CPU cores for parallel processing
-    num_rounds = 100  # Define the number of rounds
+    num_rounds = 10  # Define the number of rounds
 
     # Prepare model parameters to pass them to each worker
     model_params = {
