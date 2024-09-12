@@ -13,6 +13,8 @@ sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
+from copy import deepcopy
+
 
 # Initialize simulation parameters
 num_voters = 144
@@ -36,6 +38,10 @@ os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
 # Define a function to process a single round of evaluation
 def process_round(round_num):
     # In each round, the model and evaluation are run
+    model_copy = deepcopy(model)  # This will include a copy of the voting_matrix
+    
+    # Modify and use this independent model/voting_matrix in parallel
+    model_copy.step()  
     model.step()  # Advance the simulation by one step
     vev_results = eval_metrics.evaluate_vev(num_rounds=num_rounds)  # Evaluate for this round
     vev_results['round'] = round_num  # Track the round number

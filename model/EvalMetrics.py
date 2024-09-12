@@ -741,6 +741,7 @@ class EvalMetrics:
             'voting_rule': [],
             'max_vev': [],
             'project_max_vev': [],
+            'project_max_vev_percentage':[],
             'project_max_original_allocation': [],
             'project_max_new_allocation': [],
             'project_max_allocation_percentage': []
@@ -803,6 +804,7 @@ class EvalMetrics:
                 results['voting_rule'].append(voting_rule)
                 results['max_vev'].append(max_vev)
                 results['project_max_vev'].append(project_max_vev)
+                results['project_max_vev_percentage'].append(project_max_vev/total_op_tokens)
                 results['project_max_original_allocation'].append(project_max_original_allocation)
                 results['project_max_new_allocation'].append(project_max_new_allocation)
                 results['project_max_allocation_percentage'].append(project_max_new_allocation / total_op_tokens)

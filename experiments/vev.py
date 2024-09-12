@@ -37,7 +37,7 @@ print("Fund Allocations for each project")
 print(allocation_df.head(10))
 
 
-vev_results = eval_metrics.evaluate_vev_optimized_2(num_rounds)
+vev_results = eval_metrics.evaluate_vev(num_rounds)
 vev_results['project_max_vev']=vev_results['project_max_vev']/total_op_tokens
 vev_results.to_csv(os.path.join(output_dir, f'vev_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv'), index=False)
 
