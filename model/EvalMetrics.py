@@ -90,7 +90,7 @@ class EvalMetrics:
         return bribery_cost
 
     
-    def evaluate_bribery(self, num_rounds, desired_increase_percentage):
+    def evaluate_bribery(self, num_rounds=10, desired_increase_percentage=10):
         """
         Evaluate the bribery costs for increasing the allocation to a project by a desired percentage.
         """
@@ -156,7 +156,7 @@ class EvalMetrics:
         return numerator / denominator
 
     
-    def evaluate_gini_index(self, num_rounds):
+    def evaluate_gini_index(self, num_rounds=10):
         results = {'round': list(range(1, num_rounds + 1))}
         cumulative_allocations = {voting_rule: [] for voting_rule in self.model.voting_rules.keys()}
         for voting_rule in self.model.voting_rules.keys():
@@ -195,7 +195,7 @@ class EvalMetrics:
         x_star_top_k = np.argsort(-x_star)[:top_k]
         return np.sum(np.isin(x_top_k, x_star_top_k, invert=True))
 
-    def evaluate_alignment(self, num_rounds):
+    def evaluate_alignment(self, num_rounds=10):
         # Generate ground truth for alignment evaluation
         ground_truth = self.generate_ground_truth(self.model.num_projects)
         top_k = 200  # Number of top projects to compare for Hamming distance 
@@ -239,7 +239,7 @@ class EvalMetrics:
         """Calculate the L1 distance (Manhattan distance) between two vectors."""
         return np.sum(np.abs(x - x_prime))
 
-    def evaluate_robustness(self, min_change_param=0.001, max_change_param=0.03, num_rounds=100):
+    def evaluate_robustness(self, num_rounds=100,min_change_param=0.001, max_change_param=0.03):
         """
         Evaluate the robustness of the voting system by randomly changing a voter's vote and measuring the impact 
         across different voting rules.
@@ -309,7 +309,7 @@ class EvalMetrics:
 
     # Social Welfare
 
-    def evaluate_social_welfare(self,num_rounds):
+    def evaluate_social_welfare(self,num_rounds=10):
         results = {'round': list(range(1, num_rounds + 1))}
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_social_welfare_avg_l1_distance'] = []
@@ -331,7 +331,7 @@ class EvalMetrics:
         distances = np.linalg.norm(voting_matrix - allocation, ord=1, axis=1)
         return np.max(distances)
 
-    def evaluate_egalitarian_score(self, num_rounds):
+    def evaluate_egalitarian_score(self, num_rounds=10):
         results = {'round': list(range(1, num_rounds + 1))}
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_egalitarian_score'] = []
@@ -441,7 +441,7 @@ class EvalMetrics:
         return np.inf  # Not possible to achieve the desired increase by removing voters
 
     
-    def evaluate_control(self, num_rounds, desired_increase=20):
+    def evaluate_control(self, num_rounds=10, desired_increase=20):
         """
         Evaluate the resistance to control by adding or removing voters for a desired percentage increase in funding.
         """
@@ -611,203 +611,3 @@ class EvalMetrics:
                 modified_vote[other_project] = remaining_funds / (num_projects - 1)
 
         return modified_vote
-
-
-    def evaluate_vev_optimized(self, num_rounds=100, r_min=90, r_max=99):
-        """
-        Optimized Evaluate the Voter Extractable Value (VEV) for a given voting rule.
-        
-        Parameters:
-        - num_rounds: Number of instances to compute VEV across different vote profiles.
-        - r_min: Minimum percentage allocation to the specific project (default: 90%).
-        - r_max: Maximum percentage allocation to the specific project (default: 99%).
-
-        Returns:
-        - VEV_results: DataFrame containing the VEV for each instance and voting rule.
-        """
-        results = {
-            'round': [],
-            'voting_rule': [],
-            'max_vev': [],
-            'project_max_vev': [],
-            'project_max_original_allocation': [],
-            'project_max_new_allocation': [],
-            'project_max_allocation_percentage': []
-        }
-
-        # Precompute r values and linspace once outside the loop
-        r_values = np.linspace(r_min / 100, r_max / 100, 5)
-        total_op_tokens = self.model.total_op_tokens  # Avoid repeated access
-
-        for instance in range(1, num_rounds + 1):
-            self.model.step()  # Simulate a new vote profile
-            original_vote_matrix = self.model.voting_matrix.copy()  # Copy only once at the start
-
-            for voting_rule in self.model.voting_rules.keys():
-                max_vev = float('-inf')
-                project_max_vev = float('-inf')
-                project_max_new_allocation = float('-inf')
-                project_max_original_allocation = float('-inf')
-
-                # Get the original allocation using the voting rule
-                original_allocation = self.model.allocate_funds(voting_rule)
-                num_iterations = self.model.num_voters * self.model.num_projects * len(r_values)
-
-                with tqdm(total=num_iterations) as pbar:
-                    for voter in range(self.model.num_voters):
-                        original_vote = original_vote_matrix[voter].copy()  # Copy voter's votes only once
-                        
-                        for project in range(self.model.num_projects):
-                            project_original_allocation = original_allocation[project]
-
-                            # Iterate through precomputed r values
-                            for r in r_values:
-                                # Modify only the voter's votes temporarily
-                                modified_vote_matrix = original_vote_matrix.copy()
-                                modified_vote_matrix[voter] = self.modify_vote_optimized(voter, project, r)
-
-                                # Apply the modified vote profile
-                                new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
-                                project_new_allocation = new_allocation[project]
-
-                                # Calculate the L1 distance
-                                l1_distance = np.sum(np.abs(original_allocation - new_allocation))
-                                project_allocation_difference = project_new_allocation - project_original_allocation
-
-                                # Update progress bar and VEV values
-                                pbar.update(1)
-                                if l1_distance > max_vev:
-                                    max_vev = l1_distance
-                                if project_allocation_difference > project_max_vev:
-                                    project_max_vev = project_allocation_difference
-                                    project_max_new_allocation = project_new_allocation
-                                    project_max_original_allocation = project_original_allocation
-
-                        # Restore voter's original vote after project loop
-                        self.model.voting_matrix[voter] = original_vote
-
-                # Log the maximum VEV for this instance and voting rule
-                results['round'].append(instance)
-                results['voting_rule'].append(voting_rule)
-                results['max_vev'].append(max_vev)
-                results['project_max_vev'].append(project_max_vev)
-                results['project_max_original_allocation'].append(project_max_original_allocation)
-                results['project_max_new_allocation'].append(project_max_new_allocation)
-                results['project_max_allocation_percentage'].append(project_max_new_allocation / total_op_tokens)
-
-        VEV_results = pd.DataFrame(results)
-        return VEV_results
-    
-    def modify_vote_optimized(self, voter, project, r):
-        """
-        Optimized Modify the vote of voter `i` by allocating r% of their funds to project `k`.
-        The remainder is distributed equally across the other projects.
-
-        Parameters:
-        - voter: Index of the voter whose vote will be modified.
-        - project: Index of the project where the majority of the funds will go.
-        - r: The percentage of total funds allocated to the selected project.
-
-        Returns:
-        - modified_vote: The new vote profile for the voter with modified allocations.
-        """
-        total_funds = self.model.total_op_tokens
-        num_projects = self.model.num_projects
-
-        # Allocate r% of funds to the selected project
-        modified_vote = np.zeros(num_projects)
-        modified_vote[project] = r * total_funds
-
-        # Efficiently distribute remaining funds across other projects
-        remaining_funds = (1 - r) * total_funds
-        modified_vote[np.arange(num_projects) != project] = remaining_funds / (num_projects - 1)
-
-        return modified_vote
-
-    def evaluate_vev_optimized_2(self, num_rounds=100, r_min=90, r_max=99):
-        """
-        Optimized Evaluate the Voter Extractable Value (VEV) for a given voting rule.
-        
-        Parameters:
-        - num_rounds: Number of instances to compute VEV across different vote profiles.
-        - r_min: Minimum percentage allocation to the specific project (default: 90%).
-        - r_max: Maximum percentage allocation to the specific project (default: 99%).
-
-        Returns:
-        - VEV_results: DataFrame containing the VEV for each instance and voting rule.
-        """
-        results = {
-            'round': [],
-            'voting_rule': [],
-            'max_vev': [],
-            'project_max_vev': [],
-            'project_max_vev_percentage':[],
-            'project_max_original_allocation': [],
-            'project_max_new_allocation': [],
-            'project_max_allocation_percentage': []
-        }
-
-        # Precompute r values and linspace once outside the loop
-        r_values = np.linspace(r_min / 100, r_max / 100, 5)
-        total_op_tokens = self.model.total_op_tokens  # Avoid repeated access
-
-        for instance in range(1, num_rounds + 1):
-            self.model.step()  # Simulate a new vote profile
-
-            for voting_rule in self.model.voting_rules.keys():
-                max_vev = float('-inf')
-                project_max_vev = float('-inf')
-                project_max_new_allocation = float('-inf')
-                project_max_original_allocation = float('-inf')
-
-                # Get the original allocation using the voting rule
-                original_allocation = self.model.allocate_funds(voting_rule)
-                num_iterations = self.model.num_voters * self.model.num_projects * len(r_values)
-
-                with tqdm(total=num_iterations) as pbar:
-                    for voter in range(self.model.num_voters):
-                        # Save the original vote of the current voter
-                        original_vote = self.model.voting_matrix[voter].copy()  # Store only the voter's original vote
-
-                        for project in range(self.model.num_projects):
-                            project_original_allocation = original_allocation[project]
-
-                            # Iterate through precomputed r values
-                            for r in r_values:
-                                # Modify only the voter's votes temporarily (without deep copy)
-                                self.model.voting_matrix[voter] = self.modify_vote_optimized(voter, project, r)
-
-                                # Apply the modified vote profile
-                                new_allocation = self.model.allocate_funds(voting_rule)
-                                project_new_allocation = new_allocation[project]
-
-                                # Calculate the L1 distance
-                                l1_distance = np.sum(np.abs(original_allocation - new_allocation))
-                                project_allocation_difference = project_new_allocation - project_original_allocation
-
-                                # Progress bar update
-                                pbar.update(1)
-
-                                # Update max vev values
-                                if l1_distance > max_vev:
-                                    max_vev = l1_distance
-                                if project_allocation_difference > project_max_vev:
-                                    project_max_vev = project_allocation_difference
-                                    project_max_new_allocation = project_new_allocation
-                                    project_max_original_allocation = project_original_allocation
-
-                        # Restore the voter's original vote after all projects have been processed
-                        self.model.voting_matrix[voter] = original_vote  # Restore only this voter's vote
-
-                # Log the maximum VEV for this instance and voting rule
-                results['round'].append(instance)
-                results['voting_rule'].append(voting_rule)
-                results['max_vev'].append(max_vev)
-                results['project_max_vev'].append(project_max_vev)
-                results['project_max_vev_percentage'].append(project_max_vev/total_op_tokens)
-                results['project_max_original_allocation'].append(project_max_original_allocation)
-                results['project_max_new_allocation'].append(project_max_new_allocation)
-                results['project_max_allocation_percentage'].append(project_max_new_allocation / total_op_tokens)
-
-        VEV_results = pd.DataFrame(results)
-        return VEV_results
