@@ -16,8 +16,8 @@ from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
 num_voters = 40
-num_projects = 100
-total_op_tokens = 30e6
+num_projects = 145
+total_op_tokens = 8e6
 voter_type = 'mallows_model'
 quorum = 17
 
@@ -54,7 +54,7 @@ def run_parallel_simulation(num_rounds, num_workers=4, model_params=None):
 # Main execution
 if __name__ == '__main__':
     num_workers = mp.cpu_count()  # Use the number of available CPU cores for parallel processing
-    num_rounds = 10  # Define the number of rounds
+    num_rounds = 30  # Define the number of rounds
 
     # Prepare model parameters to pass them to each worker
     model_params = {
@@ -68,7 +68,6 @@ if __name__ == '__main__':
 
     # Run the simulation in parallel and get combined results
     all_results = run_parallel_simulation(num_rounds, num_workers, model_params)
-
     # Save the combined results to a CSV file
     output_file = os.path.join(output_dir, f'vev_parallel_run_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv')
     all_results.to_csv(output_file, index=False)

@@ -48,10 +48,10 @@ def run_parallel_control_evaluation(model, desired_increase_values, num_rounds, 
 # Main execution
 if __name__ == '__main__':
     # Initialize simulation parameters
-    num_voters = 144
-    num_projects = 600
-    total_op_tokens = 30e6
-    num_rounds = 100
+    num_voters = 40
+    num_projects = 145
+    total_op_tokens = 8e6
+    num_rounds = 5
     voter_type = 'mallows_model'
     quorum = 17
     
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # Parameters for control sweep
     min_increase = 1
     max_increase = 30
-    iterations = 100
+    iterations = 20
     desired_increase_values = np.linspace(min_increase, max_increase, iterations)
 
     # Run the parallel control evaluation
