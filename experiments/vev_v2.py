@@ -39,7 +39,7 @@ def process_round(round_num):
     model.step()  # Advance the simulation by one step
     vev_results = eval_metrics.evaluate_vev(num_rounds=num_rounds)  # Evaluate for this round
     vev_results['round'] = round_num  # Track the round number
-    vev_results['project_max_vev'] = vev_results['project_max_vev'] / total_op_tokens  # Normalize the results
+    #vev_results['project_max_vev'] = vev_results['project_max_vev'] / total_op_tokens  # Normalize the results
     return vev_results
 
 # Function to run the simulation in parallel
@@ -62,12 +62,12 @@ if __name__ == '__main__':
     all_results = run_parallel_simulation(num_rounds, num_workers)
 
     # Save the combined results to a CSV file
-    output_file = os.path.join(output_dir, f'vev_results_combined_{timestamp}.csv')
+    output_file = os.path.join(output_dir, f'vev_parallel_run_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv')
     all_results.to_csv(output_file, index=False)
     
     print("Fund Allocations for each project")
     allocation_df = model.compile_fund_allocations()
-    allocation_df.to_csv(os.path.join(output_dir, 'allocation_df.csv'), index=False)
+    #allocation_df.to_csv(os.path.join(output_dir, 'allocation_df.csv'), index=False)
     print(allocation_df.head(10))
 
     print(f"Experiment completed and results saved to {output_file}.")
