@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # Parameters for control sweep
     min_increase = 1
     max_increase = 30
-    iterations = 20
+    iterations = 30
     desired_increase_values = np.linspace(min_increase, max_increase, iterations)
 
     # Run the parallel control evaluation

@@ -144,6 +144,69 @@ class EvalMetrics:
         return final_results
     
 
+    def evaluate_bribery_optimized(self, num_rounds=10, desired_increase_percentage=10, project_sample_size=10):
+        """
+        Evaluate the bribery costs for increasing the allocation to a project by a desired percentage.
+
+        Parameters:
+        - num_rounds: Number of rounds to simulate.
+        - desired_increase_percentage: The percentage increase in the allocation.
+        - project_sample_size: Number of projects to randomly select for each round.
+        """
+        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
+
+        for voting_rule in self.model.voting_rules.keys():
+            results[f'{voting_rule}_bribery_cost'] = []
+
+        # Track the overall progress for the number of rounds
+        with tqdm(total=num_rounds, desc="Bribery Evaluation Progress", unit="round") as round_progress_bar:
+            for i in range(num_rounds):
+                print(f"\n--- Round {i + 1}/{num_rounds} ---")
+                self.model.step()  # Simulate the next round
+                desired_increase_percentage_current_round = desired_increase_percentage
+                results['desired_increase'].append(desired_increase_percentage_current_round)
+
+                # Randomly select a subset of projects to evaluate
+                sampled_projects = np.random.choice(self.model.num_projects, project_sample_size, replace=False)
+
+                # Progress bar for voting rules within a round
+                for voting_rule in tqdm(self.model.voting_rules.keys(), desc=f"Round {i + 1}: Processing Voting Rules", leave=False, unit="rule"):
+                    original_allocation = self.model.allocate_funds(voting_rule)
+                    min_bribery_cost = float('inf')
+
+                    # Track progress for sampled projects
+                    for project in sampled_projects:
+                        start_time = time.time()
+
+                        original_funds = original_allocation[project]
+                        desired_increase = original_funds * desired_increase_percentage_current_round
+
+                        # Simulate bribery for the current project
+                        bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
+                        elapsed_time = time.time() - start_time
+
+                        # Log progress for each project
+                        print(f"[Round {i + 1}] [Project {project + 1}/{self.model.num_projects}] "
+                            f"Voting Rule: {voting_rule}, Desired Increase: {desired_increase:.4f}, "
+                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s")
+
+                        # Update the minimum bribery cost for the current voting rule
+                        if bribery_cost < min_bribery_cost:
+                            min_bribery_cost = bribery_cost
+
+                    # Append the bribery cost for the current voting rule
+                    results[f'{voting_rule}_bribery_cost'].append(min_bribery_cost)
+
+                # Update the round progress bar after completing all voting rules
+                round_progress_bar.update(1)
+
+        # Convert results to a DataFrame
+        final_results = pd.DataFrame(results)
+        print("\nAll rounds completed. Final results:\n", final_results)
+        return final_results
+
+    
+
         # Gini Index
     def calculate_gini_index(self, allocation):
         m = len(allocation)
@@ -494,6 +557,66 @@ class EvalMetrics:
         final_results = pd.DataFrame(results)
         print("\nAll rounds completed. Final results:\n", final_results)
         return final_results
+    
+    def evaluate_control_optimized(self, num_rounds=10, desired_increase=20, project_sample_size=10):
+        """
+        Evaluate the resistance to control by adding or removing voters for a desired percentage increase in funding.
+
+        Parameters:
+        - num_rounds: Number of rounds to simulate.
+        - desired_increase: The percentage increase in funding to be achieved.
+        - project_sample_size: Number of projects to randomly select for each round.
+        """
+        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
+
+        # Initialize columns for removal and addition costs for each voting rule
+        for voting_rule in self.model.voting_rules.keys():
+            results[f'{voting_rule}_min_removal_cost'] = []
+            results[f'{voting_rule}_min_addition_cost'] = []
+
+        # Outer loop for the number of rounds
+        for round_num in range(num_rounds):
+            print(f"\n--- Round {round_num + 1}/{num_rounds} ---")
+            self.model.step()  # Simulate the next round
+            results['desired_increase'].append(desired_increase)
+
+            # Randomly select a subset of projects to evaluate
+            sampled_projects = np.random.choice(self.model.num_projects, project_sample_size, replace=False)
+
+            # Track progress for each round
+            for voting_rule in tqdm(self.model.voting_rules.keys(), desc=f"Processing Voting Rules (Round {round_num + 1})", unit="rule"):
+                min_removal_cost = np.inf
+                min_addition_cost = np.inf
+                removal_possible = False
+
+                # Track progress for each sampled project
+                for project in sampled_projects:
+                    project_start_time = time.time()
+
+                    # Calculate the cost to remove voters
+                    removal_cost = self.simulate_voter_removal(project, voting_rule, desired_increase)
+                    if removal_cost < np.inf:
+                        removal_possible = True
+                        min_removal_cost = min(min_removal_cost, removal_cost)
+
+                    # Calculate the cost to add voters
+                    addition_cost = self.simulate_voter_addition(project, voting_rule, desired_increase)
+                    min_addition_cost = min(min_addition_cost, addition_cost)
+
+                    # Log progress for each voter-project combination
+                    elapsed_time = time.time() - project_start_time
+                    print(f"[Round {round_num + 1}] [Project {project + 1}/{self.model.num_projects}] "
+                        f"Voting Rule: {voting_rule}, Removal Cost: {removal_cost:.4f}, "
+                        f"Addition Cost: {addition_cost:.4f}, Time: {elapsed_time:.2f}s")
+
+                # Append the removal and addition costs for the current voting rule
+                results[f'{voting_rule}_min_removal_cost'].append(min_removal_cost if removal_possible else "Not Possible")
+                results[f'{voting_rule}_min_addition_cost'].append(min_addition_cost)
+
+        # Convert results to a DataFrame
+        final_results = pd.DataFrame(results)
+        print("\nAll rounds completed. Final results:\n", final_results)
+        return final_results
         
     def evaluate_vev(self, num_rounds=100, r_min=90, r_max=99):
         """
@@ -512,6 +635,7 @@ class EvalMetrics:
             'voting_rule': [],  # Store the voting rule for each instance
             'max_vev': [],
             'project_max_vev':[],
+            'project_max_vev_percentage':[],
             'project_max_original_allocation':[],
             'project_max_new_allocation':[],
             'project_max_allocation_percentage':[]       # Store the maximum VEV for each instance
@@ -575,6 +699,7 @@ class EvalMetrics:
                 results['voting_rule'].append(voting_rule)  # Add the voting rule
                 results['max_vev'].append(max_vev)  # Add the maximum VEV
                 results['project_max_vev'].append(project_max_vev)
+                results['project_max_vev_percentage'].append(project_max_vev/self.model.total_op_tokens)
                 results['project_max_original_allocation'].append(project_max_original_allocation)
                 results['project_max_new_allocation'].append(project_max_new_allocation)
                 results['project_max_allocation_percentage'].append(project_max_new_allocation/self.model.total_op_tokens)
@@ -611,3 +736,97 @@ class EvalMetrics:
                 modified_vote[other_project] = remaining_funds / (num_projects - 1)
 
         return modified_vote
+
+
+    def evaluate_vev_optimized(self, num_rounds=100, r_min=90, r_max=99, num_sample_voters=10, num_sample_projects=10):
+        """
+        Evaluate the Voter Extractable Value (VEV) for a given voting rule, randomly selecting a subset of voters and projects.
+
+        Parameters:
+        - num_rounds: Number of instances to compute VEV across different vote profiles.
+        - r_min: Minimum percentage allocation to the specific project (default: 90%).
+        - r_max: Maximum percentage allocation to the specific project (default: 99%).
+        - num_sample_voters: Number of voters to randomly select per round.
+        - num_sample_projects: Number of projects to randomly select per round.
+
+        Returns:
+        - VEV_results: DataFrame containing the VEV for each instance and voting rule.
+        """
+        results = {
+            'round': [],        # Store round info for each instance and rule
+            'voting_rule': [],  # Store the voting rule for each instance
+            'max_vev': [],
+            'project_max_vev': [],
+            'project_max_vev_percentage': [],
+            'project_max_original_allocation': [],
+            'project_max_new_allocation': [],
+            'project_max_allocation_percentage': []  # Store the maximum VEV for each instance
+        }
+        r_values = np.linspace(r_min / 100, r_max / 100, 5)  # Generate r values from r_min to r_max
+
+        for instance in range(1, num_rounds + 1):  # Loop through rounds
+            self.model.step()  # Simulate a new vote profile
+
+            for voting_rule in self.model.voting_rules.keys():
+                max_vev = float('-inf')  # Track the maximum VEV for this rule
+                project_max_vev = float('-inf')
+                project_max_new_allocation = float('-inf')
+                project_max_original_allocation = float('-inf')
+
+                # Get the original allocation using the voting rule
+                original_allocation = self.model.allocate_funds(voting_rule)
+
+                # Randomly select a subset of voters and projects
+                selected_voters = np.random.choice(self.model.num_voters, num_sample_voters, replace=False)
+                selected_projects = np.random.choice(self.model.num_projects, num_sample_projects, replace=False)
+
+                num_iterations = num_sample_voters * num_sample_projects * len(r_values)
+                with tqdm(total=num_iterations) as pbar:
+                    for voter in selected_voters:
+                        for project in selected_projects:
+                            project_original_allocation = original_allocation[project]
+
+                            # Iterate through r values from r_min to r_max
+                            for r in r_values:
+                                # Create a modified vote for this voter and project
+                                start_time = time.time()
+                                modified_vote_matrix = self.model.voting_matrix.copy()
+                                modified_vote_matrix[voter] = self.modify_vote(voter, project, r)
+
+                                # Apply the modified vote profile to get a new allocation
+                                new_allocation = self.model.allocate_funds(voting_rule, modified_vote_matrix)
+                                project_new_allocation = new_allocation[project]
+
+                                # Calculate the L1 distance between original and new allocation
+                                l1_distance = np.sum(np.abs(original_allocation - new_allocation))
+                                project_allocation_difference = project_new_allocation - project_original_allocation
+
+                                elapsed_time = time.time() - start_time
+                                print(f"[Round {instance}] [Voter {voter}] [Project {project}] "
+                                    f"r={r:.2f} L1={l1_distance:.4f} Allocation Diff={project_allocation_difference:.4f} "
+                                    f"Max VEV={max_vev:.4f} Elapsed Time: {elapsed_time:.2f}s")
+
+                                # Progress bar update
+                                pbar.update(1)
+
+                                # Update the maximum VEV if this is the largest skewness
+                                if l1_distance > max_vev:
+                                    max_vev = l1_distance
+                                if project_allocation_difference > project_max_vev:
+                                    project_max_vev = project_allocation_difference
+                                    project_max_new_allocation = project_new_allocation
+                                    project_max_original_allocation = project_original_allocation
+
+                    # Log the maximum VEV for this instance and voting rule
+                    results['round'].append(instance)  # Add round number dynamically
+                    results['voting_rule'].append(voting_rule)  # Add the voting rule
+                    results['max_vev'].append(max_vev)  # Add the maximum VEV
+                    results['project_max_vev'].append(project_max_vev)
+                    results['project_max_vev_percentage'].append(project_max_vev / self.model.total_op_tokens)
+                    results['project_max_original_allocation'].append(project_max_original_allocation)
+                    results['project_max_new_allocation'].append(project_max_new_allocation)
+                    results['project_max_allocation_percentage'].append(project_max_new_allocation / self.model.total_op_tokens)
+
+        # Create a DataFrame to store results
+        VEV_results = pd.DataFrame(results)
+        return VEV_results

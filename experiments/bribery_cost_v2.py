@@ -18,7 +18,7 @@ from model.VotingRules import VotingRules
 def process_bribery_iteration(model, desired_increase_percentage, num_rounds):
     model_copy = deepcopy(model)  # Independent copy of the model to avoid state sharing
     eval_metrics_copy = EvalMetrics(model_copy)  # Independent EvalMetrics instance
-    bribery_results_df = eval_metrics_copy.evaluate_bribery(num_rounds, desired_increase_percentage)
+    bribery_results_df = eval_metrics_copy.evaluate_bribery_optimized(num_rounds, desired_increase_percentage)
 
     # Calculate the average bribery cost for each voting rule over all rounds
     avg_bribery_costs = bribery_results_df.mean()
@@ -62,8 +62,8 @@ if __name__ == '__main__':
 
     # Parameters for bribery sweep
     min_increase = 1
-    max_increase = 10
-    iterations = 20
+    max_increase = 30
+    iterations = 30
     desired_increase_percentages = np.linspace(min_increase, max_increase, iterations)
 
     # Run the parallel bribery evaluation

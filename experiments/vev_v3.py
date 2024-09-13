@@ -42,7 +42,7 @@ def process_round(round_num):
     
     # Modify and use this independent model/voting_matrix in parallel
     model.step()  
-    vev_results = eval_metrics.evaluate_vev(num_rounds=num_rounds)  # Evaluate for this round
+    vev_results = eval_metrics.evaluate_vev_optimized(num_rounds=1)  # Evaluate for this round
     vev_results['round'] = round_num  # Track the round number
     #vev_results['project_max_vev'] = vev_results['project_max_vev'] / total_op_tokens  # Normalize the results
     return vev_results

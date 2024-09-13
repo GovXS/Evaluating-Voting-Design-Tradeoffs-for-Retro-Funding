@@ -23,7 +23,7 @@ def process_round(model, desired_increase, round_num):
     model_copy.step()
     
     # Evaluate control results for the current desired increase for this round
-    control_results_df = eval_metrics_copy.evaluate_control(1, desired_increase)  # Evaluate only for one round
+    control_results_df = eval_metrics_copy.evaluate_control_optimized(num_rounds=1, desired_increase=desired_increase)  # Evaluate only for one round
     
     # Add round number to the results for tracking
     control_results_df['round'] = round_num
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Save the results to a CSV file
-    output_path = os.path.join(output_dir, f'control_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv')
+    output_path = os.path.join(output_dir, f'control_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds*iterations}.csv')
     all_control_results.to_csv(output_path, index=False)
 
     # Display the results

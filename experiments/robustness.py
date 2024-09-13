@@ -16,9 +16,9 @@ from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
-num_voters = 144
-num_projects = 600
-total_op_tokens = 30e6
+num_voters = 45
+num_projects = 145
+total_op_tokens = 8e6
 num_rounds = 100
 voter_type = 'mallows_model'
 quorum=17
