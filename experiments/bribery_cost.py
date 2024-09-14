@@ -16,10 +16,10 @@ from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
-num_voters = 144
-num_projects = 600
-total_op_tokens = 30e6
-num_rounds = 10
+num_voters = 40
+num_projects = 145
+total_op_tokens = 8e6
+num_rounds = 5
 voter_type = 'mallows_model'
 quorum=17
 # Initialize the model
@@ -40,8 +40,8 @@ print(allocation_df.head(10))
 
 # %%
 min_increase = 1
-max_increase = 10
-iterations = 20
+max_increase = 30
+iterations = 30
 counter=1
 
 # Create a DataFrame to store the results of each iteration
