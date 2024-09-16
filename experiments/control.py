@@ -75,7 +75,7 @@ print(control_results)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Save the results to a CSV file
-control_results.to_csv(os.path.join(output_dir, f'control_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv'), index=False)
+control_results.to_csv(os.path.join(output_dir, f'control_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv'), index=False)
 
 
 # %%

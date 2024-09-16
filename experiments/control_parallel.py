@@ -91,7 +91,7 @@ if __name__ == '__main__':
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Save the results to a CSV file
-    output_path = os.path.join(output_dir, f'control_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds*iterations}.csv')
+    output_path = os.path.join(output_dir, f'control_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv')
     all_control_results.to_csv(output_path, index=False)
 
     # Display the results

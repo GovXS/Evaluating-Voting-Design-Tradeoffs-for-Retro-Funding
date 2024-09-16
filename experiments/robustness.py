@@ -38,7 +38,7 @@ print(allocation_df.head(10))
 
 
 robustness_results = eval_metrics.evaluate_robustness(num_rounds=num_rounds)
-robustness_results.to_csv(os.path.join(output_dir,f'robustness_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}.csv'), index=False)
+robustness_results.to_csv(os.path.join(output_dir,f'robustness_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds}_{timestamp}.csv'), index=False)
 print("Robustness Results:")
 print(robustness_results.head(100))
 

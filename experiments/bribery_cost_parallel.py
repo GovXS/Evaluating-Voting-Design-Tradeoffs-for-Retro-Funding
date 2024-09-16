@@ -88,7 +88,7 @@ if __name__ == '__main__':
     print(bribery_results)
 
     # Save the results to a CSV file
-    output_path = os.path.join(output_dir, f'bribery_experiment_results_{timestamp}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds*iterations}.csv')
+    output_path = os.path.join(output_dir, f'bribery_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv')
     bribery_results.to_csv(output_path, index=False)
 
     print("Bribery experiment completed")
