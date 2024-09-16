@@ -57,11 +57,11 @@ This setup allows for both running pre-existing experiments and defining new vot
 
 2. **Voting Rules** (`models.VotingRules`)
    - Contains the implementation of different voting rules, including:
-     - `r1_quadratic`: Quadratic voting, where the square root of the votes is used to determine allocation.
-     - `r2_mean`: Mean voting, where the mean number of votes is used for allocation.
-     - `r3_median`: Median voting, using the median of votes cast to allocate funds.
-     - `r4_capped_median`: A capped version of median voting to ensure fairness across projects.
-     - `Majoritarian Moving Phantoms`: Advanced voting system based on an iterative median and phantom vote mechanism.
+     - `r1_quadratic`: R1 Quadratic Voting, where the square root of the votes is used to determine allocation. We replicate the [Optimism RetroPGF Round 1](https://community.optimism.io/citizens-house/rounds/retropgf-1) voting rule.
+     - `r2_mean`: R2 Mean Rule, where the mean number of votes is used for allocation. We replicate the [Optimism RetroPGF Round 2](https://community.optimism.io/citizens-house/rounds/retropgf-2) voting rule, the results are normalized.
+     - `r3_median`: R3 Quorum Median rule, using the median of votes cast to allocate funds. We replicate the [Optimism RetroPGF Round 3](https://community.optimism.io/citizens-house/rounds/retropgf-3) voting rule, where a quorum applies and the results are normalized.
+     - `r4_capped_median`: R4 Median Impact Metric Score, a capped version of median voting to ensure fairness across projects. We replicate the [Optimism RetroPGF Round 4](https://community.optimism.io/citizens-house/rounds/retropgf-4)) voting rule, where a quorum applies and the results are normalized. In our simulations we work with a simplified version R4a Simplified Capped Median and ignore first step to calculate the Impact Metric Score based on the project's KPIs.
+     - `Majoritarian Moving Phantoms`: Majoritarian Phantoms voting rule, an advanced voting system based on an iterative median and artificial algorithmic voting agents to calculate the funding allocation. 
 
 3. **Evaluation Metrics** (`metrics.EvalMetrics`)
    - Provides functions to evaluate the performance of voting rules based on various metrics:
@@ -179,7 +179,7 @@ This section details various experiments conducted using the Optimism RetroPGF S
 
 ### Control Experiment
 
-The **Control Experiment** evaluates the resistance of the voting system to manipulation through the addition or removal of voters. By sweeping the **desired increase** parameter (percentage of desired increase in funding for a target project), the system measures how many additional/removed voters are required to manipulate results for each voting rule.
+
 
 #### Parameters Swept:
 
@@ -220,22 +220,9 @@ for desired_increase in np.linspace(min_increase, max_increase, iterations):
 
 The **Bribery Experiment** evaluates how susceptible each voting rule is to bribery. The experiment sweeps the **desired increase percentage** parameter to observe the costs associated with increasing the allocation of a target project by the specified percentage.
 
-#### Setup:
-
-- **Number of Voters**: 40
-- **Number of Projects**: 145
-- **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 5
-- **Voter Type**: `mallows_model`
-
 #### Parameters Swept:
-
 - **Desired Increase Percentage**: Swept from 1% to 30% over 30 iterations.
 
-#### Output:
-
-- For each iteration, the system computes the bribery cost required to meet the desired increase for each voting rule. The average bribery costs across rounds are logged.
-- The experiment stores results in a CSV file containing the bribery costs for different voting rules and desired increase percentages.
 
 ```python
 # Example setup of the Bribery Experiment
@@ -251,27 +238,35 @@ for desired_increase_percentage in np.linspace(min_increase, max_increase, itera
     bribery_results.to_csv(output_path)
 ```
 
-### Results
+#### Output:
 
-Both experiments log results to CSV files, which include average costs for control and bribery under various desired increase values. These files can then be further analyzed to compare the performance of different voting rules under different conditions.
+- for each iteration, we randomly assign votes to projects
+- in the simulation, we randomly select the target project who should receive the desired increase
+- we sweep over the desired funding increase building on this voting profile
+- for each iteration, the system computes the required token moves (moving a token to another project) to meet the desired funding increase; we assume 1 payment unit per token move and calculate the result as "bribery cost"
+- the average bribery costs across rounds are logged (average token moves required across all desired increases)
+- the experiment stores results in a CSV file containing the bribery costs for different voting rules and desired increase percentages.
+- both experiments Control and Bribery log results to CSV files, which include average costs for control and bribery under various desired increase values. These files can then be further analyzed to compare the performance of different voting rules under different conditions.
 
-
-### Robustness Experiment
-
-The **Robustness Experiment** evaluates the stability of the voting system by introducing random changes to voters' votes. The experiment runs multiple rounds to measure how much an individual vote change affects the overall fund allocation for each voting rule.
-
-#### Setup:
+#### Parameter Setup:
 
 - **Number of Voters**: 40
 - **Number of Projects**: 145
 - **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 100
+- **Rounds per Experiment**: 5
 - **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
+
+
+### Robustness Experiment
+
 
 #### Output:
-
-- The system calculates the **L1 distance** between the original and altered fund allocation across 100 rounds, which reflects how sensitive each voting rule is to random vote changes.
-- The results are logged in a CSV file that records the robustness results for each voting rule across all rounds.
+- we create a voting profile with random votes on projects (see `agents.VoterAgent`)
+- the `random_change_vote` function picks one vote in the voter profile randomly and modifies it by assigning it a new random (floating-point) value between 0 and 1 (normalized).
+- then, the new fund allocation is calculated adhering to the voting rules in the evaluation
+- the system sums up the **[L1 distance](https://en.wikipedia.org/wiki/Taxicab_geometry)** between the original and altered fund allocation across all rounds, and all voters
+- the result reflects how sensitive each voting rule is to the same (random) vote changes based on the same voting profile
 
 ```python
 # Example setup of the Robustness Experiment
@@ -280,22 +275,17 @@ robustness_results = eval_metrics.evaluate_robustness(num_rounds=num_rounds)
 robustness_results.to_csv(output_path, index=False)
 ```
 
-### Voter Extractable Value (VEV) Experiment
-
-The **Voter Extractable Value (VEV) Experiment** evaluates how much a single voter can influence the outcome of the fund allocation for a particular project. By running multiple rounds of voting, the experiment determines how skewed the allocation can become in favor of a specific project based on the actions of a single voter.
-
-#### Setup:
+#### Parameter Setup:
 
 - **Number of Voters**: 40
 - **Number of Projects**: 145
 - **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 50
+- **Rounds per Experiment**: 100
 - **Voter Type**: `mallows_model`
 
-#### Output:
+### Voter Extractable Value (VEV) Experiment
 
-- The experiment calculates the **maximum VEV** (Voter Extractable Value) for each project in each round, which measures the degree to which a voter can skew the allocation toward a project.
-- The results include the percentage change in the allocation and are stored in a CSV file. The results also provide insights into the most susceptible projects and voting rules for exploitation by a single voter.
+The **Voter Extractable Value (VEV) Experiment** evaluates how much a single voter can influence the outcome of the fund allocation for a particular project. By running multiple rounds of voting, the experiment determines how skewed the allocation can become in favor of a specific project based on the actions of a single voter.
 
 ```python
 # Example setup of the VEV Experiment
@@ -304,10 +294,27 @@ vev_results = eval_metrics.evaluate_vev(num_rounds)
 vev_results.to_csv(output_path, index=False)
 ```
 
+#### Output:
+
+- for each iteration, we randomly assign votes to projects
+- we randomly select a malicious voter 
+- we change the vote of the malicious voter to vote 99% on their target project and distribute the rest equally across all other projects
+- the system iterates over all projects to find the **maximum VEV** (Voter Extractable Value) in each round, which measures the degree to which a voter can skew the allocation for the target project
+- we compute the funding allocation change as a % share of the total funding available and store it in a csv file.
+  
+#### Simulation Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 50
+- **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
+
+
 ### Results
 
 All experiments log their results in CSV files, which include the average costs, sensitivity scores, and maximum extractable values for control, bribery, robustness, and voter extractable value (VEV) metrics. These files can then be analyzed to compare the performance of different voting rules under various conditions.
-
 
 ## Voting Rule Verification
 
