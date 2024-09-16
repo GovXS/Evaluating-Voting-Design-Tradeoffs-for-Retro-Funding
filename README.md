@@ -280,19 +280,6 @@ robustness_results.to_csv(output_path, index=False)
 
 The **Voter Extractable Value (VEV) Experiment** evaluates how much a single voter can influence the outcome of the fund allocation for a particular project. By running multiple rounds of voting, the experiment determines how skewed the allocation can become in favor of a specific project based on the actions of a single voter.
 
-#### Setup:
-
-- **Number of Voters**: 40
-- **Number of Projects**: 145
-- **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 50
-- **Voter Type**: `mallows_model`
-
-#### Output:
-
-- The experiment calculates the **maximum VEV** (Voter Extractable Value) for each project in each round, which measures the degree to which a voter can skew the allocation toward a project.
-- The results include the percentage change in the allocation and are stored in a CSV file. The results also provide insights into the most susceptible projects and voting rules for exploitation by a single voter.
-
 ```python
 # Example setup of the VEV Experiment
 num_rounds = 50
@@ -300,10 +287,26 @@ vev_results = eval_metrics.evaluate_vev(num_rounds)
 vev_results.to_csv(output_path, index=False)
 ```
 
+#### Output:
+
+- for each iteration, we randomly assign votes to projects
+- we randomly select a malicious voter 
+- we change the vote of the malicious voter to vote 99% on their target project and distribute the rest equally across all other projects
+- the system iterates over all projects to find the **maximum VEV** (Voter Extractable Value) in each round, which measures the degree to which a voter can skew the allocation for the target project
+- we compute the funding allocation change as a % share of the total funding available and store it in a csv file.
+  
+#### Simulation Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 50
+- **Voter Type**: `mallows_model`
+
+
 ### Results
 
 All experiments log their results in CSV files, which include the average costs, sensitivity scores, and maximum extractable values for control, bribery, robustness, and voter extractable value (VEV) metrics. These files can then be analyzed to compare the performance of different voting rules under various conditions.
-
 
 ## Voting Rule Verification
 
