@@ -188,6 +188,7 @@ The **Control Experiment** evaluates the resistance of the voting system to mani
 - **Total OP Tokens**: 8 million
 - **Rounds per Experiment**: 5
 - **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
 
 #### Parameters Swept:
 
@@ -216,22 +217,9 @@ for desired_increase in np.linspace(min_increase, max_increase, iterations):
 
 The **Bribery Experiment** evaluates how susceptible each voting rule is to bribery. The experiment sweeps the **desired increase percentage** parameter to observe the costs associated with increasing the allocation of a target project by the specified percentage.
 
-#### Setup:
-
-- **Number of Voters**: 40
-- **Number of Projects**: 145
-- **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 5
-- **Voter Type**: `mallows_model`
-
 #### Parameters Swept:
-
 - **Desired Increase Percentage**: Swept from 1% to 30% over 30 iterations.
 
-#### Output:
-
-- For each iteration, the system computes the bribery cost required to meet the desired increase for each voting rule. The average bribery costs across rounds are logged.
-- The experiment stores results in a CSV file containing the bribery costs for different voting rules and desired increase percentages.
 
 ```python
 # Example setup of the Bribery Experiment
@@ -247,14 +235,28 @@ for desired_increase_percentage in np.linspace(min_increase, max_increase, itera
     bribery_results.to_csv(output_path)
 ```
 
-### Results
+#### Output:
 
-Both experiments log results to CSV files, which include average costs for control and bribery under various desired increase values. These files can then be further analyzed to compare the performance of different voting rules under different conditions.
+- for each iteration, we randomly assign votes to projects
+- in the simulation, we randomly select the target project who should receive the desired increase
+- we sweep over the desired funding increase building on this voting profile
+- for each iteration, the system computes the required token moves (moving a token to another project) to meet the desired funding increase; we assume 1 payment unit per token move and calculate the result as "bribery cost"
+- the average bribery costs across rounds are logged (average token moves required across all desired increases)
+- the experiment stores results in a CSV file containing the bribery costs for different voting rules and desired increase percentages.
+- both experiments Control and Bribery log results to CSV files, which include average costs for control and bribery under various desired increase values. These files can then be further analyzed to compare the performance of different voting rules under different conditions.
+
+#### Parameter Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 5
+- **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
 
 
 ### Robustness Experiment
 
-The **Robustness Experiment** evaluates the stability of the voting system by introducing random changes to voters' votes. The experiment runs multiple rounds to measure how much an individual vote change affects the overall fund allocation for each voting rule. 
 
 #### Output:
 - we create a voting profile with random votes on projects (see `agents.VoterAgent`)
@@ -282,19 +284,6 @@ robustness_results.to_csv(output_path, index=False)
 
 The **Voter Extractable Value (VEV) Experiment** evaluates how much a single voter can influence the outcome of the fund allocation for a particular project. By running multiple rounds of voting, the experiment determines how skewed the allocation can become in favor of a specific project based on the actions of a single voter.
 
-#### Setup:
-
-- **Number of Voters**: 40
-- **Number of Projects**: 145
-- **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 50
-- **Voter Type**: `mallows_model`
-
-#### Output:
-
-- The experiment calculates the **maximum VEV** (Voter Extractable Value) for each project in each round, which measures the degree to which a voter can skew the allocation toward a project.
-- The results include the percentage change in the allocation and are stored in a CSV file. The results also provide insights into the most susceptible projects and voting rules for exploitation by a single voter.
-
 ```python
 # Example setup of the VEV Experiment
 num_rounds = 50
@@ -302,10 +291,27 @@ vev_results = eval_metrics.evaluate_vev(num_rounds)
 vev_results.to_csv(output_path, index=False)
 ```
 
+#### Output:
+
+- for each iteration, we randomly assign votes to projects
+- we randomly select a malicious voter 
+- we change the vote of the malicious voter to vote 99% on their target project and distribute the rest equally across all other projects
+- the system iterates over all projects to find the **maximum VEV** (Voter Extractable Value) in each round, which measures the degree to which a voter can skew the allocation for the target project
+- we compute the funding allocation change as a % share of the total funding available and store it in a csv file.
+  
+#### Simulation Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 50
+- **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
+
+
 ### Results
 
 All experiments log their results in CSV files, which include the average costs, sensitivity scores, and maximum extractable values for control, bribery, robustness, and voter extractable value (VEV) metrics. These files can then be analyzed to compare the performance of different voting rules under various conditions.
-
 
 ## Voting Rule Verification
 
