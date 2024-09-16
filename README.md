@@ -57,11 +57,11 @@ This setup allows for both running pre-existing experiments and defining new vot
 
 2. **Voting Rules** (`models.VotingRules`)
    - Contains the implementation of different voting rules, including:
-     - `r1_quadratic`: Quadratic voting, where the square root of the votes is used to determine allocation.
-     - `r2_mean`: Mean voting, where the mean number of votes is used for allocation.
-     - `r3_median`: Median voting, using the median of votes cast to allocate funds.
-     - `r4_capped_median`: A capped version of median voting to ensure fairness across projects.
-     - `Majoritarian Moving Phantoms`: Advanced voting system based on an iterative median and phantom vote mechanism.
+     - `r1_quadratic`: R1 Quadratic Voting, where the square root of the votes is used to determine allocation. We replicate the [Optimism RetroPGF Round 1](https://community.optimism.io/citizens-house/rounds/retropgf-1) voting rule.
+     - `r2_mean`: R2 Mean Rule, where the mean number of votes is used for allocation. We replicate the [Optimism RetroPGF Round 2](https://community.optimism.io/citizens-house/rounds/retropgf-2) voting rule, the results are normalized.
+     - `r3_median`: R3 Quorum Median rule, using the median of votes cast to allocate funds. We replicate the [Optimism RetroPGF Round 3](https://community.optimism.io/citizens-house/rounds/retropgf-3) voting rule, where a quorum applies and the results are normalized.
+     - `r4_capped_median`: R4 Median Impact Metric Score, a capped version of median voting to ensure fairness across projects. We replicate the [Optimism RetroPGF Round 4](https://community.optimism.io/citizens-house/rounds/retropgf-4)) voting rule, where a quorum applies and the results are normalized. In our simulations we work with a simplified version R4a Simplified Capped Median and ignore first step to calculate the Impact Metric Score based on the project's KPIs.
+     - `Majoritarian Moving Phantoms`: Majoritarian Phantoms voting rule, an advanced voting system based on an iterative median and artificial algorithmic voting agents to calculate the funding allocation. 
 
 3. **Evaluation Metrics** (`metrics.EvalMetrics`)
    - Provides functions to evaluate the performance of voting rules based on various metrics:
