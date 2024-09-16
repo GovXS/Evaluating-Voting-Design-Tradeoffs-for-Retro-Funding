@@ -257,21 +257,13 @@ for desired_increase_percentage in np.linspace(min_increase, max_increase, itera
 
 ### Robustness Experiment
 
-The **Robustness Experiment** evaluates the stability of the voting system by introducing random changes to voters' votes. The experiment runs multiple rounds to measure how much an individual vote change affects the overall fund allocation for each voting rule.
-
-#### Setup:
-
-- **Number of Voters**: 40
-- **Number of Projects**: 145
-- **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 100
-- **Voter Type**: `mallows_model`
-- **Quorum**: 17 (applies to R3 Quorum Median)
 
 #### Output:
-
-- The system calculates the **L1 distance** between the original and altered fund allocation across 100 rounds, which reflects how sensitive each voting rule is to random vote changes.
-- The results are logged in a CSV file that records the robustness results for each voting rule across all rounds.
+- we create a voting profile with random votes on projects (see `agents.VoterAgent`)
+- the `random_change_vote` function picks one vote in the voter profile randomly and modifies it by assigning it a new random (floating-point) value between 0 and 1 (normalized).
+- then, the new fund allocation is calculated adhering to the voting rules in the evaluation
+- the system sums up the **[L1 distance](https://en.wikipedia.org/wiki/Taxicab_geometry)** between the original and altered fund allocation across all rounds, and all voters
+- the result reflects how sensitive each voting rule is to the same (random) vote changes based on the same voting profile
 
 ```python
 # Example setup of the Robustness Experiment
@@ -279,6 +271,14 @@ num_rounds = 100
 robustness_results = eval_metrics.evaluate_robustness(num_rounds=num_rounds)
 robustness_results.to_csv(output_path, index=False)
 ```
+
+#### Parameter Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 100
+- **Voter Type**: `mallows_model`
 
 ### Voter Extractable Value (VEV) Experiment
 
