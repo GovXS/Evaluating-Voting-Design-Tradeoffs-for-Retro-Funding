@@ -203,7 +203,7 @@ for desired_increase in np.linspace(min_increase, max_increase, iterations):
 
 - for each iteration, we randomly assign votes to projects
 - we then sweep over the desired funding increase using this voting profile
-- the experiment iterates over the minimum number of additional/removed voters needed to reach the desired funding increase
+- the experiment iterates over the minimum number of additional/removed voters needed to reach the desired funding increase, where the voters added/removed vote in the following way: (add how additional/removed voters behave!)
 - the system calculates the average minimum number of voters to be added or removed to land at the respective funding increase
 - the system stores results in a CSV file containing the desired funding increase in % and the average minimum number of voters (added/removed)
 
