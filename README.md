@@ -179,24 +179,11 @@ This section details various experiments conducted using the Optimism RetroPGF S
 
 ### Control Experiment
 
-The **Control Experiment** evaluates the resistance of the voting system to manipulation through the addition or removal of voters. By sweeping the **desired increase** parameter (percentage of desired increase in funding for a target project), the system measures how costly it is to manipulate results for each voting rule.
-
-#### Setup:
-
-- **Number of Voters**: 40
-- **Number of Projects**: 145
-- **Total OP Tokens**: 8 million
-- **Rounds per Experiment**: 5
-- **Voter Type**: `mallows_model`
+The **Control Experiment** evaluates the resistance of the voting system to manipulation through the addition or removal of voters. By sweeping the **desired increase** parameter (percentage of desired increase in funding for a target project), the system measures how many additional/removed voters are required to manipulate results for each voting rule.
 
 #### Parameters Swept:
 
 - **Desired Increase**: Swept from 1% to 30% over 30 iterations.
-
-#### Output:
-
-- For each iteration, the system calculates the average cost of controlling the allocation (through adding or removing voters) and logs the result.
-- The experiment stores results in a CSV file containing the desired increase and the minimum cost required to control the vote for each voting rule.
 
 ```python
 # Example setup of the Control Experiment
@@ -211,6 +198,23 @@ for desired_increase in np.linspace(min_increase, max_increase, iterations):
     # Store results
     control_results.to_csv(output_path)
 ```
+
+#### Output:
+
+- for each iteration, we randomly assign votes to projects
+- we then sweep over the desired funding increase using this voting profile
+- the experiment iterates over the minimum number of additional/removed voters needed to reach the desired funding increase
+- the system calculates the average minimum number of voters to be added or removed to land at the respective funding increase
+- the system stores results in a CSV file containing the desired funding increase in % and the average minimum number of voters (added/removed)
+
+
+#### Parameter Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 5
+- **Voter Type**: `mallows_model`
 
 ### Bribery Experiment
 
