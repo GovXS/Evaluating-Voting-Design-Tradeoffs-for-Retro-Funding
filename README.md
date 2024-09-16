@@ -179,7 +179,16 @@ This section details various experiments conducted using the Optimism RetroPGF S
 
 ### Control Experiment
 
+The **Control Experiment** evaluates the resistance of the voting system to manipulation through the addition or removal of voters. By sweeping the **desired increase** parameter (percentage of desired increase in funding for a target project), the system measures how costly it is to manipulate results for each voting rule.
 
+#### Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 5
+- **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
 
 #### Parameters Swept:
 
@@ -256,10 +265,38 @@ for desired_increase_percentage in np.linspace(min_increase, max_increase, itera
 - **Rounds per Experiment**: 5
 - **Voter Type**: `mallows_model`
 - **Quorum**: 17 (applies to R3 Quorum Median)
+#### Output:
+
+- for each iteration, we randomly assign votes to projects
+- in the simulation, we randomly select the target project who should receive the desired increase
+- we sweep over the desired funding increase building on this voting profile
+- for each iteration, the system computes the required token moves (moving a token to another project) to meet the desired funding increase; we assume 1 payment unit per token move and calculate the result as "bribery cost"
+- the average bribery costs across rounds are logged (average token moves required across all desired increases)
+- the experiment stores results in a CSV file containing the bribery costs for different voting rules and desired increase percentages.
+- both experiments Control and Bribery log results to CSV files, which include average costs for control and bribery under various desired increase values. These files can then be further analyzed to compare the performance of different voting rules under different conditions.
+
+#### Parameter Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 5
+- **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
 
 
 ### Robustness Experiment
 
+The **Robustness Experiment** evaluates the stability of the voting system by introducing random changes to voters' votes. The experiment runs multiple rounds to measure how much an individual vote change affects the overall fund allocation for each voting rule.
+
+#### Setup:
+
+- **Number of Voters**: 40
+- **Number of Projects**: 145
+- **Total OP Tokens**: 8 million
+- **Rounds per Experiment**: 100
+- **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
 
 #### Output:
 - we create a voting profile with random votes on projects (see `agents.VoterAgent`)
@@ -282,6 +319,7 @@ robustness_results.to_csv(output_path, index=False)
 - **Total OP Tokens**: 8 million
 - **Rounds per Experiment**: 100
 - **Voter Type**: `mallows_model`
+- **Quorum**: 17 (applies to R3 Quorum Median)
 
 ### Voter Extractable Value (VEV) Experiment
 
