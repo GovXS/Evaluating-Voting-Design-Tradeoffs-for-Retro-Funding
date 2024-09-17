@@ -78,12 +78,15 @@ if __name__ == '__main__':
         # Run the parallel control evaluation for this desired increase across rounds
         num_workers = mp.cpu_count()  # Use the available CPU cores
         control_results = run_parallel_control_evaluation(model, desired_increase, num_rounds, num_workers)
+        avg_control_results = control_results.mean()
         
         # Add the desired increase percentage to the results
         control_results['desired_increase_percentage'] = desired_increase
+        avg_control_results_df = avg_control_results.to_frame().T
+
+        # Append the results to the DataFrame using pd.concat
+        control_results = pd.concat([control_results, avg_control_results_df], ignore_index=True)
         
-        # Append to the overall results
-        all_control_results = pd.concat([all_control_results, control_results], ignore_index=True)
 
     # Display the results after the parallel execution
     print(all_control_results)
