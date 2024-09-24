@@ -29,8 +29,11 @@ model.step()
 eval_metrics = EvalMetrics(model)
 
 # Define the directory for output
-output_dir = os.path.join(current_dir, '..', 'data', 'vm_data')
-os.makedirs(output_dir, exist_ok=True)  # Ensure the directory exists
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+
+# Ensure the directory exists
+os.makedirs(output_dir, exist_ok=True)
+
 
 # Define a function to process a single round of evaluation
 def process_round(round_num):

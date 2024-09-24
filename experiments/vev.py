@@ -29,7 +29,10 @@ model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=n
 model.step()
 eval_metrics = EvalMetrics(model)
 current_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current file's directory
-output_dir = os.path.join(current_dir, '..', 'data', 'vm_data')  # Define relative path
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+
+    # Ensure the directory exists
+os.makedirs(output_dir, exist_ok=True)
 
 allocation_df=model.compile_fund_allocations()
 allocation_df.to_csv(os.path.join(output_dir, 'allocation_df.csv'), index=False)

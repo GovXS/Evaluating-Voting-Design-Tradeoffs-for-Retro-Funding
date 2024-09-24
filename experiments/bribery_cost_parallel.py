@@ -56,7 +56,10 @@ if __name__ == '__main__':
 
     # Get the current file's directory
     current_dir = os.path.dirname(os.path.abspath(__file__))  
-    output_dir = os.path.join(current_dir, '..', 'data', 'vm_data')  # Define relative path
+    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+
+    # Ensure the directory exists
+    os.makedirs(output_dir, exist_ok=True)
 
     # Parameters for bribery evaluation
     min_increase = 1
