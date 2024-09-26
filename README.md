@@ -1,4 +1,4 @@
-# OP-Evaluating-Voting-Design-Tradeoffs-for-Retro-Funding
+# Evaluating-Voting-Design-Tradeoffs-for-Retro-Funding
 ### Optimism RetroPGF Simulator - README
 
 # Overview
