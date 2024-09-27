@@ -98,6 +98,9 @@ class VotingModel(Model):
             del self.voting_rules[name]
 
     def compile_fund_allocations(self):
+        num_voters, num_projects = self.voting_matrix.shape
+        self.num_projects=num_projects
+        self.num_voters=num_voters
         allocations = {name: self.allocate_funds(name) for name in self.voting_rules.keys()}
         allocations["Project"] = [f"Project {i+1}" for i in range(self.num_projects)]
         

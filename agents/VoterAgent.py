@@ -1,5 +1,6 @@
 from mesa import Agent
 import numpy as np
+import pandas as pd
 
 
 class VoterAgent(Agent):
@@ -12,7 +13,9 @@ class VoterAgent(Agent):
 
     
     def vote(self, num_voters):
-        if self.voter_type == 'rn_model':
+        if self.voter_type == 'r4_voting_matrix':
+            return self.r4_voting_matrix()
+        elif self.voter_type == 'rn_model':
             return self.optimized_rn_model(num_voters, self.num_projects, self.total_op_tokens, alpha=2)  # Specify alpha as needed
         elif self.voter_type == 'mallows_model':
             return self.mallows_model_quick(num_voters, self.num_projects, self.total_op_tokens)
@@ -41,7 +44,7 @@ class VoterAgent(Agent):
         urn = [np.random.multinomial(K, [1.0/m] * m) for _ in range(100)]
         votes = []
         for i in range(n):
-            chosen_vote = random.choice(urn)
+            chosen_vote = np.random.choice(urn)
             votes.append(chosen_vote)
             urn.extend([chosen_vote] * alpha)
         return votes
@@ -93,3 +96,16 @@ class VoterAgent(Agent):
             vote = np.random.multinomial(K, probabilities)
             votes.append(vote)
         return votes
+    
+    def r4_voting_matrix(self):
+        # Load the voting matrix from the CSV file
+        voting_matrix_df = pd.read_csv('/Users/idrees/Code/govxs/agents/r4_voting_matrix.csv', index_col=0)
+
+        # Convert the DataFrame to a NumPy array
+        voting_matrix = voting_matrix_df.to_numpy()
+
+        # Ensure the shape of the matrix matches the expected shape
+        #if voting_matrix.shape != (self.num_projects, len(voting_matrix_df.index)):
+        #raise ValueError("Voting matrix shape does not match expected dimensions")
+
+        return voting_matrix
