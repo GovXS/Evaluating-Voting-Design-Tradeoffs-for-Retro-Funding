@@ -48,3 +48,23 @@ print(vev_results.head(100))
 print("Experiment Completed")
 
 
+# Save the experiment parameters to a text file
+parameters = {
+    "num_voters": num_voters,
+    "num_projects": num_projects,
+    "total_op_tokens": total_op_tokens,
+    "num_rounds per iteration": num_rounds,
+    "voter_type": voter_type,
+    "quorum": quorum,
+    "timestamp": timestamp
+}
+
+script_file_name = os.path.splitext(os.path.basename(__file__))[0]
+
+# Set the path for the parameter file, including the script file name
+param_file_path = os.path.join(output_dir, f'{script_file_name}_experiment_parameters_{timestamp}.txt')
+
+# Write the parameters to the text file
+with open(param_file_path, 'w') as f:
+    for key, value in parameters.items():
+        f.write(f'{key}: {value}\n')
