@@ -1,0 +1,11 @@
+experiment_description: running experiment with r4 data unoptimized
+num_voters: 40
+num_projects: 50
+total_op_tokens: 8000000.0
+num_rounds per iteration: 2
+voter_type: r4_voting_matrix
+quorum: 17
+min_increase: 1
+max_increase: 30
+iterations: 10
+timestamp: 20240928_133744

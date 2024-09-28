@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 import multiprocessing as mp
 from copy import deepcopy
-from ..config import config
+import config
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +23,7 @@ def process_bribery_round(model, desired_increase_percentage, round_num):
     
     # Simulate the bribery for the current round
     model_copy.step()  # Advance the simulation for this round
-    bribery_results_df = eval_metrics_copy.evaluate_bribery_optimized(1, desired_increase_percentage)  # Evaluate for one round
+    bribery_results_df = eval_metrics_copy.evaluate_bribery(1, desired_increase_percentage)  # Evaluate for one round
     
     # Add round number for tracking
     bribery_results_df['round'] = round_num

@@ -23,7 +23,7 @@ def process_round(model, desired_increase, round_num):
     model_copy.step()
     
     # Evaluate control results for the current desired increase for this round
-    control_results_df = eval_metrics_copy.evaluate_control_optimized(num_rounds=1, desired_increase=desired_increase)  # Evaluate only for one round
+    control_results_df = eval_metrics_copy.evaluate_control(num_rounds=1, desired_increase=desired_increase)  # Evaluate only for one round
     
     # Add round number to the results for tracking
     control_results_df['round'] = round_num
@@ -44,7 +44,7 @@ def run_parallel_control_evaluation(model, desired_increase, num_rounds, num_wor
 # Main execution
 if __name__ == '__main__':
     # Initialize simulation parameters
-    from ..config import config
+    import config
 
     # Initialize simulation parameters
     num_voters = config.num_voters#40

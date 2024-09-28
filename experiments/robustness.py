@@ -14,7 +14,7 @@ from model.EvalMetrics import EvalMetrics
 # Add the directory containing the VotingModel to the Python path
 
 from model.VotingRules import VotingRules
-from ..config import config
+import config
 
 # Initialize simulation parameters
 # Initialize simulation parameters

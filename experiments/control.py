@@ -15,7 +15,7 @@ from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
-from ..config import config
+import config
 
 # Initialize simulation parameters
 num_voters = config.num_voters#40

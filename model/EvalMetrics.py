@@ -513,7 +513,7 @@ class EvalMetrics:
         # Initialize columns for removal and addition costs for each voting rule
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_min_removal_cost'] = []
-            results[f'{voting_rule}_min_addition_cost'] = []
+            #results[f'{voting_rule}_min_addition_cost'] = []
 
         num_iterations = num_rounds * self.model.num_voters * self.model.num_projects
 
@@ -572,7 +572,7 @@ class EvalMetrics:
         # Initialize columns for removal and addition costs for each voting rule
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_min_removal_cost'] = []
-            results[f'{voting_rule}_min_addition_cost'] = []
+            #results[f'{voting_rule}_min_addition_cost'] = []
 
         # Outer loop for the number of rounds
         for round_num in range(num_rounds):
@@ -600,18 +600,18 @@ class EvalMetrics:
                         min_removal_cost = min(min_removal_cost, removal_cost)
 
                     # Calculate the cost to add voters
-                    addition_cost = self.simulate_voter_addition(project, voting_rule, desired_increase)
-                    min_addition_cost = min(min_addition_cost, addition_cost)
+                    #addition_cost = self.simulate_voter_addition(project, voting_rule, desired_increase)
+                    #min_addition_cost = min(min_addition_cost, addition_cost)
 
                     # Log progress for each voter-project combination
                     elapsed_time = time.time() - project_start_time
                     print(f"[Round {round_num + 1}] [Project {project + 1}/{self.model.num_projects}] "
-                        f"Voting Rule: {voting_rule}, Removal Cost: {removal_cost:.4f}, "
-                        f"Addition Cost: {addition_cost:.4f}, Time: {elapsed_time:.2f}s")
+                        f"Voting Rule: {voting_rule}, Removal Cost: {removal_cost:.4f}, ")
+                        #f"Addition Cost: {addition_cost:.4f}, Time: {elapsed_time:.2f}s")
 
                 # Append the removal and addition costs for the current voting rule
                 results[f'{voting_rule}_min_removal_cost'].append(min_removal_cost if removal_possible else "Not Possible")
-                results[f'{voting_rule}_min_addition_cost'].append(min_addition_cost)
+                #results[f'{voting_rule}_min_addition_cost'].append(min_addition_cost)
 
         # Convert results to a DataFrame
         final_results = pd.DataFrame(results)
