@@ -44,13 +44,21 @@ def run_parallel_control_evaluation(model, desired_increase, num_rounds, num_wor
 # Main execution
 if __name__ == '__main__':
     # Initialize simulation parameters
-    num_voters = 40
-    num_projects = 145
-    total_op_tokens = 8e6
-    num_rounds = 5
-    voter_type = 'mallows_model'
-    quorum = 17
-    
+    from ..config import config
+
+    # Initialize simulation parameters
+    num_voters = config.num_voters#40
+    num_projects = config.num_projects#145
+    total_op_tokens = config.total_op_tokens#8e6
+    num_rounds = config.num_rounds#5
+    voter_type = config.voter_type#'mallows_model'
+    quorum = config.quorum#17
+
+    # Parameters for bribery evaluation
+    min_increase = config.min_increase#1
+    max_increase = config.max_increase#30
+    iterations = config.iterations#30
+    experiment_description=config.experiment_description#'running robustness with r4 data'
     # Initialize the model
     model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=num_projects, total_op_tokens=total_op_tokens)
     
@@ -65,10 +73,7 @@ if __name__ == '__main__':
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    # Parameters for control sweep
-    min_increase = 1
-    max_increase = 30
-    iterations = 30  # Number of different desired increase percentages to try
+     # Number of different desired increase percentages to try
     desired_increase_values = np.linspace(min_increase, max_increase, iterations)
 
     # Create a DataFrame to hold the results
@@ -105,6 +110,7 @@ if __name__ == '__main__':
     print(f"Results saved to {output_path}")
     # Save the experiment parameters to a text file
     parameters = {
+        "experiment_description":experiment_description,
         "num_voters": num_voters,
         "num_projects": num_projects,
         "total_op_tokens": total_op_tokens,

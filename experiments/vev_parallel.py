@@ -12,14 +12,21 @@ sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
+from ..config import config
 
 # Initialize simulation parameters
-num_voters = 40
-num_projects = 145
-total_op_tokens = 8e6
-num_rounds = 50
-voter_type = 'mallows_model'
-quorum=17
+num_voters = config.num_voters#40
+num_projects = config.num_projects#145
+total_op_tokens = config.total_op_tokens#8e6
+num_rounds = config.num_rounds#5
+voter_type = config.voter_type#'mallows_model'
+quorum = config.quorum#17
+
+ # Parameters for bribery evaluation
+min_increase = config.min_increase#1
+max_increase = config.max_increase#30
+iterations = config.iterations#30
+experiment_description=config.experiment_description#'running robustness with r4 data'
 
 # Initialize the model
 model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=num_projects, total_op_tokens=total_op_tokens)
@@ -77,6 +84,7 @@ if __name__ == '__main__':
 
     # Save the experiment parameters to a text file
     parameters = {
+        "experiment_description":experiment_description,
         "num_voters": num_voters,
         "num_projects": num_projects,
         "total_op_tokens": total_op_tokens,
