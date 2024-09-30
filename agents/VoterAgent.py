@@ -108,7 +108,7 @@ class VoterAgent(Agent):
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Define the relative path to the CSV file
-        relative_path = os.path.join(current_dir, '..', 'agents', 'r4_voting_matrix.csv')
+        relative_path = os.path.join(current_dir, '..', 'data','op_voting_matrix', 'r4_voting_matrix.csv')
 
         # Load the voting matrix from the CSV file
         voting_matrix_df = pd.read_csv(relative_path, index_col=0)
@@ -128,7 +128,7 @@ class VoterAgent(Agent):
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
         # Define the relative path to the CSV file
-        relative_path = os.path.join(current_dir, '..', 'agents', 'r1_voting_matrix.csv')
+        relative_path = os.path.join(current_dir, '..', 'data', 'op_voting_matrix','r1_voting_matrix.csv')
 
         # Load the voting matrix from the CSV file
         voting_matrix_df = pd.read_csv(relative_path, index_col=0)
