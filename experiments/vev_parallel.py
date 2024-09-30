@@ -12,7 +12,7 @@ sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
 from model.VotingRules import VotingRules
-from . import config
+import config
 
 # Initialize simulation parameters
 num_voters = config.num_voters#40

@@ -10,7 +10,7 @@ project_root = os.path.join(current_dir, '..')  # Adjust this to point to the co
 sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
-from . import config
+import config
 
 # Add the directory containing the VotingModel to the Python path
 

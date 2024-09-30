@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 import multiprocessing as mp
 from copy import deepcopy
+import config
 
 # Add the directory containing the VotingModel to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +45,7 @@ def run_parallel_control_evaluation(model, desired_increase, num_rounds, num_wor
 # Main execution
 if __name__ == '__main__':
     # Initialize simulation parameters
-    import config
+  
 
     # Initialize simulation parameters
     num_voters = config.num_voters#40
