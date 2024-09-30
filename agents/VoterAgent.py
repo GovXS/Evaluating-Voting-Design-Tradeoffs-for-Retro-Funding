@@ -1,6 +1,8 @@
 from mesa import Agent
 import numpy as np
 import pandas as pd
+import os
+import pandas as pd
 
 
 class VoterAgent(Agent):
@@ -97,15 +99,42 @@ class VoterAgent(Agent):
             votes.append(vote)
         return votes
     
+   
+
     def r4_voting_matrix(self):
+        # Get the current file's directory (this script's location)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Define the relative path to the CSV file
+        relative_path = os.path.join(current_dir, '..', 'agents', 'r4_voting_matrix.csv')
+
         # Load the voting matrix from the CSV file
-        voting_matrix_df = pd.read_csv('/Users/idrees/Code/govxs/agents/r4_voting_matrix.csv', index_col=0)
+        voting_matrix_df = pd.read_csv(relative_path, index_col=0)
 
         # Convert the DataFrame to a NumPy array
         voting_matrix = voting_matrix_df.to_numpy()
 
         # Ensure the shape of the matrix matches the expected shape
-        #if voting_matrix.shape != (self.num_projects, len(voting_matrix_df.index)):
-        #raise ValueError("Voting matrix shape does not match expected dimensions")
+        # if voting_matrix.shape != (self.num_projects, len(voting_matrix_df.index)):
+        #     raise ValueError("Voting matrix shape does not match expected dimensions")
+
+        return voting_matrix
+    
+    def r1_voting_matrix(self):
+        # Get the current file's directory (this script's location)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Define the relative path to the CSV file
+        relative_path = os.path.join(current_dir, '..', 'agents', 'r1_voting_matrix.csv')
+
+        # Load the voting matrix from the CSV file
+        voting_matrix_df = pd.read_csv(relative_path, index_col=0)
+
+        # Convert the DataFrame to a NumPy array
+        voting_matrix = voting_matrix_df.to_numpy()
+
+        # Ensure the shape of the matrix matches the expected shape
+        # if voting_matrix.shape != (self.num_projects, len(voting_matrix_df.index)):
+        #     raise ValueError("Voting matrix shape does not match expected dimensions")
 
         return voting_matrix
