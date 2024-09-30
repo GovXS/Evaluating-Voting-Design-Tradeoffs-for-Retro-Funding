@@ -37,7 +37,7 @@ model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=n
 model.step()
 eval_metrics = EvalMetrics(model)
 current_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current file's directory
-output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
 
 # Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)
@@ -81,10 +81,9 @@ print(control_results)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Save the results to a CSV file
-control_results.to_csv(os.path.join(output_dir, f'control_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv'), index=False)
+control_results.to_csv(os.path.join(output_dir, f'control_experiment_results_{timestamp}.csv'), index=False)
 
 
-# %%
 print(control_results.head(100))
 
 
