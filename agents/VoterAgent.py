@@ -16,7 +16,9 @@ class VoterAgent(Agent):
     
     def vote(self, num_voters):
         if self.voter_type == 'r4_voting_matrix':
-            return self.r4_voting_matrix()
+            return self.r4_voting_matrix(num_voters, self.num_projects, self.total_op_tokens,)
+        elif self.voter_type == 'r1_voting_matrix':
+            return self.r1_voting_matrix(num_voters, self.num_projects, self.total_op_tokens,)
         elif self.voter_type == 'rn_model':
             return self.optimized_rn_model(num_voters, self.num_projects, self.total_op_tokens, alpha=2)  # Specify alpha as needed
         elif self.voter_type == 'mallows_model':
@@ -101,7 +103,7 @@ class VoterAgent(Agent):
     
    
 
-    def r4_voting_matrix(self):
+    def r4_voting_matrix(self,n,m,K):
         # Get the current file's directory (this script's location)
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -113,6 +115,7 @@ class VoterAgent(Agent):
 
         # Convert the DataFrame to a NumPy array
         voting_matrix = voting_matrix_df.to_numpy()
+        voting_matrix=voting_matrix*K
 
         # Ensure the shape of the matrix matches the expected shape
         # if voting_matrix.shape != (self.num_projects, len(voting_matrix_df.index)):
@@ -120,7 +123,7 @@ class VoterAgent(Agent):
 
         return voting_matrix
     
-    def r1_voting_matrix(self):
+    def r1_voting_matrix(self,n,m,K):
         # Get the current file's directory (this script's location)
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -132,6 +135,7 @@ class VoterAgent(Agent):
 
         # Convert the DataFrame to a NumPy array
         voting_matrix = voting_matrix_df.to_numpy()
+        voting_matrix=voting_matrix*K
 
         # Ensure the shape of the matrix matches the expected shape
         # if voting_matrix.shape != (self.num_projects, len(voting_matrix_df.index)):

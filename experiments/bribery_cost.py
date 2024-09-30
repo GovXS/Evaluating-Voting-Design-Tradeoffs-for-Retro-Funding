@@ -36,7 +36,7 @@ model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=n
 model.step()
 eval_metrics = EvalMetrics(model)
 current_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current file's directory
-output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}_{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
 
     # Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)
@@ -73,7 +73,7 @@ for i, desired_increase_percentage in enumerate(desired_increase_percentages, 1)
 
 # Display the results after the loop
 print(bribery_results)
-output_path=os.path.join(output_dir, f'bribery_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv')
+output_path=os.path.join(output_dir, f'bribery_experiment_results_{timestamp}.csv')
 
 bribery_results.to_csv(output_path, index=False)
 

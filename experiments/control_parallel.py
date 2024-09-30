@@ -69,7 +69,7 @@ if __name__ == '__main__':
 
     # Get the current file's directory
     current_dir = os.path.dirname(os.path.abspath(__file__))  
-    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
 
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -81,20 +81,24 @@ if __name__ == '__main__':
     all_control_results = pd.DataFrame()
 
     # Iterate over each desired_increase_percentage
+    # Iterate over each desired_increase_percentage
     for i, desired_increase in enumerate(desired_increase_values, 1):
         print(f"Evaluating control for desired_increase_percentage: {desired_increase} ({i}/{iterations})")
         
         # Run the parallel control evaluation for this desired increase across rounds
         num_workers = mp.cpu_count()  # Use the available CPU cores
         control_results = run_parallel_control_evaluation(model, desired_increase, num_rounds, num_workers)
+        
+        # Calculate the average control results for this percentage
         avg_control_results = control_results.mean()
         
-        # Add the desired increase percentage to the results
-        control_results['desired_increase_percentage'] = desired_increase
+        # Convert the average results to a DataFrame and add the desired_increase_percentage
         avg_control_results_df = avg_control_results.to_frame().T
+        avg_control_results_df['desired_increase_percentage'] = desired_increase
+        
+        # Append the average results for this desired increase to the final results DataFrame
+        all_control_results = pd.concat([all_control_results, avg_control_results_df], ignore_index=True)
 
-        # Append the results to the DataFrame using pd.concat
-        control_results = pd.concat([control_results, avg_control_results_df], ignore_index=True)
         
 
     # Display the results after the parallel execution
@@ -103,7 +107,7 @@ if __name__ == '__main__':
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Save the results to a CSV file
-    output_path = os.path.join(output_dir, f'control_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv')
+    output_path = os.path.join(output_dir, f'control_experiment_results_{timestamp}.csv')
     all_control_results.to_csv(output_path, index=False)
 
     # Display the results

@@ -36,7 +36,7 @@ model.step()
 eval_metrics = EvalMetrics(model)
 
 # Define the directory for output
-output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
 
 # Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     all_results = run_parallel_simulation(num_rounds, num_workers)
 
     # Save the combined results to a CSV file
-    output_file = os.path.join(output_dir, f'vev_results_{num_projects}_{num_voters}_{num_rounds}_{timestamp}.csv')
+    output_file = os.path.join(output_dir, f'vev_results_{timestamp}.csv')
     all_results.to_csv(output_file, index=False)
     
     print("Fund Allocations for each project")

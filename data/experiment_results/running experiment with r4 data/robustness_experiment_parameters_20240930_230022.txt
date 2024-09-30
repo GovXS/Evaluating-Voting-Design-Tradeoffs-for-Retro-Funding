@@ -1,0 +1,8 @@
+experiment_description: running experiment with r4 data
+num_voters: 108
+num_projects: 229
+total_op_tokens: 8000000.0
+num_rounds per iteration: 100
+voter_type: r4_voting_matrix
+quorum: 17
+timestamp: 20240930_230022

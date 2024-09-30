@@ -1,6 +1,6 @@
-num_voters: 144
-num_projects: 600
+num_voters: 22
+num_projects: 76
 total_op_tokens: 8000000.0
-num_rounds: 100
+num_rounds: 1
 voter_type: r4_voting_matrix
 quorum: 17

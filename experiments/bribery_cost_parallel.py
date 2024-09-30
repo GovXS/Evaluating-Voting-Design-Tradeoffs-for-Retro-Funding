@@ -10,6 +10,7 @@ import config
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.join(current_dir, '..')  # Adjust this to point to the correct folder
+script_file_name = os.path.splitext(os.path.basename(__file__))[0]
 sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
@@ -60,7 +61,7 @@ if __name__ == '__main__':
 
     # Get the current file's directory
     current_dir = os.path.dirname(os.path.abspath(__file__))  
-    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{num_voters}_{num_projects}_{total_op_tokens}_{num_rounds}')
+    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
 
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -95,7 +96,7 @@ if __name__ == '__main__':
     print(bribery_results)
 
     # Save the results to a CSV file
-    output_path = os.path.join(output_dir, f'bribery_experiment_results_{num_projects}_{num_voters}_{total_op_tokens}_{num_rounds*iterations}_{timestamp}.csv')
+    output_path = os.path.join(output_dir, f'bribery_experiment_results_{timestamp}.csv')
     bribery_results.to_csv(output_path, index=False)
 
     print("Bribery experiment completed")
@@ -116,7 +117,7 @@ if __name__ == '__main__':
         "timestamp": timestamp
     }
 
-    script_file_name = os.path.splitext(os.path.basename(__file__))[0]
+   
 
     # Set the path for the parameter file, including the script file name
     param_file_path = os.path.join(output_dir, f'{script_file_name}_experiment_parameters_{timestamp}.txt')

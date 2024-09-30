@@ -122,7 +122,7 @@ class VotingRules:
         return np.minimum(final_allocation, K2)  # Ensure final capping
     
 
-    def r4_capped_median_no_caps(self,voting_matrix, total_op_tokens, num_voters):
+    def normalized_median(self,voting_matrix, total_op_tokens, num_voters):
         num_voters, num_projects = voting_matrix.shape
 
         # K1 is the maximum number of tokens a single voter can allocate to a single project before redistribution is triggered.
