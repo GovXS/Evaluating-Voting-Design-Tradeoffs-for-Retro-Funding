@@ -1,0 +1,7 @@
+num_voters: 40
+num_projects: 63
+total_op_tokens: 8000000.0
+num_rounds: 100
+voter_type: mallows_model
+quorum: 17
+simulation_description: medium_round_40_63

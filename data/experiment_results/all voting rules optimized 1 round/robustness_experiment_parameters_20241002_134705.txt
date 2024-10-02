@@ -1,0 +1,8 @@
+experiment_description: all voting rules optimized 1 round
+num_voters: 108
+num_projects: 230
+total_op_tokens: 8000000.0
+num_rounds per iteration: 1
+voter_type: r4_voting_matrix
+quorum: 17
+timestamp: 20241002_134705

@@ -48,7 +48,7 @@ def process_round(round_num):
     model.step()  # Advance the simulation by one step
     vev_results = eval_metrics.evaluate_vev_optimized(1)  # Evaluate for this round
     vev_results['round'] = round_num  # Track the round number
-    vev_results['project_max_vev'] = vev_results['project_max_vev'] / total_op_tokens  # Normalize the results
+    #vev_results['project_max_vev'] = vev_results['project_max_vev'] / total_op_tokens  # Normalize the results
     return vev_results
 
 # Function to run the simulation in parallel

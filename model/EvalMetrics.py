@@ -117,7 +117,10 @@ class EvalMetrics:
                         start_time = time.time()
                         
                         original_funds = original_allocation[project]
-                        desired_increase = original_funds * desired_increase_percentage_current_round
+                        if original_funds<=0.1:
+                            desired_increase = 0.001 * self.model.total_op_tokens * desired_increase_percentage_current_round/100
+                        else:
+                            desired_increase = original_funds * desired_increase_percentage_current_round/100
 
                         # Simulate bribery for the current project
                         bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
@@ -179,7 +182,10 @@ class EvalMetrics:
                         start_time = time.time()
 
                         original_funds = original_allocation[project]
-                        desired_increase = original_funds * desired_increase_percentage_current_round
+                        if original_funds<=0.1:
+                            desired_increase = 0.01 * self.model.total_op_tokens * desired_increase_percentage_current_round/100
+                        else:
+                            desired_increase = original_funds * desired_increase_percentage_current_round/100
 
                         # Simulate bribery for the current project
                         bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
@@ -204,8 +210,6 @@ class EvalMetrics:
         final_results = pd.DataFrame(results)
         print("\nAll rounds completed. Final results:\n", final_results)
         return final_results
-
-    
 
         # Gini Index
     def calculate_gini_index(self, allocation):
@@ -406,11 +410,15 @@ class EvalMetrics:
                 results[f'{voting_rule}_egalitarian_score'].append(egalitarian_score)
         return pd.DataFrame(results)
 
-    def simulate_voter_addition(self, project, voting_rule, desired_increase):
+    def simulate_voter_addition(self, project, voting_rule, desired_increase_percentage):
         num_voters, num_projects = self.model.voting_matrix.shape
         original_allocation = self.model.allocate_funds(voting_rule)
         original_funds = original_allocation[project]
-        target_funds = original_funds * (1 + desired_increase / 100)
+        if original_funds<=0.1:
+            desired_increase = 0.01 * self.model.total_op_tokens * desired_increase_percentage/100
+        else:
+            desired_increase = original_funds * desired_increase_percentage/100
+        target_funds = original_funds + desired_increase
         added_voters = 0
 
         #print(f"Voting Rule: {voting_rule}: Original Funds for Project {project}: {original_funds}")
@@ -448,11 +456,16 @@ class EvalMetrics:
 
         return np.inf  # If no solution is found
 
-    def simulate_voter_removal(self, project, voting_rule, desired_increase):
+    def simulate_voter_removal(self, project, voting_rule, desired_increase_percentage):
         num_voters, num_projects = self.model.voting_matrix.shape
         original_allocation = self.model.allocate_funds(voting_rule)
         original_funds = original_allocation[project]
-        target_funds = original_funds * (1 + desired_increase / 100)
+
+        if original_funds<=0.1:
+            desired_increase = 0.01 * self.model.total_op_tokens * desired_increase_percentage/100
+        else:
+            desired_increase = original_funds * desired_increase_percentage/100
+        target_funds = original_funds + desired_increase
 
         # Make a copy of the voting matrix to modify during the simulation
         potential_voting_matrix = self.model.voting_matrix.copy()

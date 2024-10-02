@@ -12,8 +12,6 @@ from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
 import config
 
-# Add the directory containing the VotingModel to the Python path
-
 from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
@@ -47,7 +45,6 @@ print("Fund Allocations for each project")
 print(allocation_df.head(10))
 
 
-
 # Create a DataFrame to store the results of each iteration
 bribery_results = pd.DataFrame()
 
@@ -78,7 +75,6 @@ output_path=os.path.join(output_dir, f'bribery_experiment_results_{timestamp}.cs
 bribery_results.to_csv(output_path, index=False)
 
 
-# %%
 bribery_results.head(100)
 print("Bribery experiment Completed")
 print(f"Results saved to {output_path}")

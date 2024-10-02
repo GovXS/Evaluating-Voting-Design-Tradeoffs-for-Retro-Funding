@@ -1,0 +1,8 @@
+experiment_description: diffrent round size
+num_voters: 40
+num_projects: 63
+total_op_tokens: 8000000.0
+num_rounds per iteration: 100
+voter_type: mallows_model
+quorum: 17
+timestamp: 20241001_122942

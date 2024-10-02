@@ -1,0 +1,7 @@
+num_voters: 108
+num_projects: 229
+total_op_tokens: 8000000.0
+num_rounds: 100
+voter_type: r4_voting_matrix
+quorum: 17
+simulation_description: r4 data simulations_108_229
