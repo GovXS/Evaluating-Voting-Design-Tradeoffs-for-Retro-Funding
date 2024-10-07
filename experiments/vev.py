@@ -10,25 +10,25 @@ project_root = os.path.join(current_dir, '..')  # Adjust this to point to the co
 sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
-import config
+import experiments.experiments_config as experiments_config
 
 # Add the directory containing the VotingModel to the Python path
 
 from model.VotingRules import VotingRules
 
 # Initialize simulation parameters
-num_voters = config.num_voters#40
-num_projects = config.num_projects#145
-total_op_tokens = config.total_op_tokens#8e6
-num_rounds = config.num_rounds#5
-voter_type = config.voter_type#'mallows_model'
-quorum = config.quorum#17
+num_voters = experiments_config.num_voters#40
+num_projects = experiments_config.num_projects#145
+total_op_tokens = experiments_config.total_op_tokens#8e6
+num_rounds = experiments_config.num_rounds#5
+voter_type = experiments_config.voter_type#'mallows_model'
+quorum = experiments_config.quorum#17
 
  # Parameters for bribery evaluation
-min_increase = config.min_increase#1
-max_increase = config.max_increase#30
-iterations = config.iterations#30
-experiment_description=config.experiment_description#'running robustness with r4 data'
+min_increase = experiments_config.min_increase#1
+max_increase = experiments_config.max_increase#30
+iterations = experiments_config.iterations#30
+experiment_description=experiments_config.experiment_description#'running robustness with r4 data'
 # Initialize the model
 model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=num_projects, total_op_tokens=total_op_tokens)
 

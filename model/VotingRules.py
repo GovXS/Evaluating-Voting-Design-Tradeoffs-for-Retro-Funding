@@ -48,11 +48,11 @@ class VotingRules:
         num_voters, num_projects = voting_matrix.shape
 
         # K1 is the maximum number of tokens a single voter can allocate to a single project before redistribution is triggered.
-        K1 = 0.05*total_op_tokens
+        K1 = 500000#0.05*total_op_tokens
         # K2 is the maximum median allocation a project can receive before redistribution is triggered.
-        K2 =  0.05*total_op_tokens
+        K2 =  500000#0.05*total_op_tokens
         # K3 is the minimum allocation required for a project to receive funding; projects below this threshold are eliminated, and their funds are redistributed.
-        K3 = 0.0001*total_op_tokens
+        K3 = 1000#0.0001*total_op_tokens
 
         # Step 1: Cap at K1 for each voter
         capped_scores = np.minimum(voting_matrix, K1)
@@ -121,7 +121,7 @@ class VotingRules:
 
         return np.minimum(final_allocation, K2)  # Ensure final capping
     
-    '''
+    
     def normalized_median(self,voting_matrix, total_op_tokens, num_voters):
         num_voters, num_projects = voting_matrix.shape
 
@@ -230,7 +230,7 @@ class VotingRules:
             distribution = np.array([median_with_phantoms(t_star, j) for j in range(m)])
             best_distribution = distribution * (total_op_tokens / np.sum(distribution))
             return best_distribution
-    
+    '''
 
 
     

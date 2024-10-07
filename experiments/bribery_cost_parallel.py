@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 import multiprocessing as mp
 from copy import deepcopy
-import config
+import experiments.experiments_config as experiments_config
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -24,7 +24,7 @@ def process_bribery_round(model, desired_increase_percentage, round_num):
     
     # Simulate the bribery for the current round
     model_copy.step()  # Advance the simulation for this round
-    bribery_results_df = eval_metrics_copy.evaluate_bribery_optimized(1, desired_increase_percentage)  # Evaluate for one round
+    bribery_results_df = eval_metrics_copy.evaluate_bribery(1, desired_increase_percentage)  # Evaluate for one round
     
     # Add round number for tracking
     bribery_results_df['round'] = round_num
@@ -44,13 +44,13 @@ def run_parallel_bribery_evaluation(model, num_rounds, desired_increase_percenta
 if __name__ == '__main__':
     # Initialize simulation parameters
     
-    num_voters = config.num_voters#40
-    num_projects = config.num_projects#145
-    total_op_tokens = config.total_op_tokens#8e6
-    num_rounds = config.num_rounds#5
-    voter_type = config.voter_type#'mallows_model'
-    quorum = config.quorum#17
-    experiment_description=config.experiment_description#'running robustness with r4 data'
+    num_voters = experiments_config.num_voters#40
+    num_projects = experiments_config.num_projects#145
+    total_op_tokens = experiments_config.total_op_tokens#8e6
+    num_rounds = experiments_config.num_rounds#5
+    voter_type = experiments_config.voter_type#'mallows_model'
+    quorum = experiments_config.quorum#17
+    experiment_description=experiments_config.experiment_description#'running robustness with r4 data'
     
     # Initialize the model
     model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=num_projects, total_op_tokens=total_op_tokens)
@@ -67,9 +67,9 @@ if __name__ == '__main__':
     os.makedirs(output_dir, exist_ok=True)
 
     # Parameters for bribery evaluation
-    min_increase = config.min_increase#1
-    max_increase = config.max_increase#30
-    iterations = config.iterations#30
+    min_increase = experiments_config.min_increase#1
+    max_increase = experiments_config.max_increase#30
+    iterations = experiments_config.iterations#30
     desired_increase_percentages = np.linspace(min_increase, max_increase, iterations)
 
     # Iterate over each desired increase percentage
