@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import sys
 from datetime import datetime
+from datetime import datetime
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 import multiprocessing as mp
 from copy import deepcopy
 import experiments_config
@@ -69,7 +71,7 @@ if __name__ == '__main__':
 
     # Get the current file's directory
     current_dir = os.path.dirname(os.path.abspath(__file__))  
-    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
+    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}_{timestamp}')
 
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)

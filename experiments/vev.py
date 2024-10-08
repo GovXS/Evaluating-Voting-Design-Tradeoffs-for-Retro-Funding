@@ -36,7 +36,7 @@ model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=n
 model.step()
 eval_metrics = EvalMetrics(model)
 current_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current file's directory
-output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}_{timestamp}')
 
     # Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)

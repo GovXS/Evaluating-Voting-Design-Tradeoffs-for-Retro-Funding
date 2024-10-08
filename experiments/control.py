@@ -4,6 +4,8 @@ import pandas as pd
 import os
 import sys
 from datetime import datetime
+from datetime import datetime
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.join(current_dir, '..')  # Adjust this to point to the correct folder
 sys.path.append(project_root)
@@ -37,7 +39,7 @@ model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=n
 model.step()
 eval_metrics = EvalMetrics(model)
 current_dir = os.path.dirname(os.path.abspath(__file__))  # Get the current file's directory
-output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}_{timestamp}')
 
 # Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)

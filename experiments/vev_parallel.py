@@ -36,7 +36,7 @@ model.step()
 eval_metrics = EvalMetrics(model)
 
 # Define the directory for output
-output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
+output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}_{timestamp}')
 
 # Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)

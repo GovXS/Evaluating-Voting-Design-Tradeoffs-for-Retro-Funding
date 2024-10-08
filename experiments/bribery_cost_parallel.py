@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     # Get the current file's directory
     current_dir = os.path.dirname(os.path.abspath(__file__))  
-    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}')
+    output_dir = os.path.join(current_dir, '..', 'data', 'experiment_results', f'{experiment_description}_{timestamp}')
 
     # Ensure the directory exists
     os.makedirs(output_dir, exist_ok=True)
