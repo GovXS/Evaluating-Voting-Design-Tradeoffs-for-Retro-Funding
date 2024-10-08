@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 import multiprocessing as mp
 from copy import deepcopy
-import experiments.experiments_config as experiments_config
+import experiments_config
 
 # Add the directory containing the VotingModel to the Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))

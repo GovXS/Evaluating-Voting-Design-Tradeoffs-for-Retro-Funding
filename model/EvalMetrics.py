@@ -28,7 +28,7 @@ class EvalMetrics:
         original_allocation = self.model.allocate_funds(voting_rule)
         original_funds = original_allocation[target_project]
         
-        tolerance=0.0001*self.model.total_op_tokens
+        tolerance=0.00001*self.model.total_op_tokens
         # Step 2: Calculate the target funds with the desired increase
         target_funds = original_funds + desired_increase
         
@@ -36,7 +36,7 @@ class EvalMetrics:
         bribery_cost = 0
         new_voting_matrix = self.model.voting_matrix.copy()
         original_matrix = self.model.voting_matrix.copy()  # Save the original matrix
-        max_no_progress_iterations=5
+        max_no_progress_iterations=20
         no_progress_iterations = 0
         prev_funds = original_funds
         #print(f"--- Bribery Simulation Debugging ---")
@@ -82,10 +82,14 @@ class EvalMetrics:
                 
                 # Accumulate the additional votes into the bribery cost
                 bribery_cost += additional_votes
-
+                
         finally:
             # Step 5: Restore the original voting matrix
             self.model.voting_matrix = original_matrix
+
+        if bribery_cost == 0 and new_funds < target_funds:
+            bribery_cost = self.model.total_op_tokens
+            print(f"For project {target_project}, unable to meet target. Bribery cost set to infinity.")
 
         return bribery_cost
 
@@ -94,7 +98,10 @@ class EvalMetrics:
         """
         Evaluate the bribery costs for increasing the allocation to a project by a desired percentage.
         """
-        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
+        results = {'round': list(range(1, num_rounds + 1)), 
+                   'desired_increase': [],
+                #'absolute_desired_increase': []
+                   }
         
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_bribery_cost'] = []
@@ -104,8 +111,7 @@ class EvalMetrics:
             for i in range(num_rounds):
                 print(f"\n--- Round {i + 1}/{num_rounds} ---")
                 self.model.step()  # Simulate the next round
-                desired_increase_percentage_current_round = desired_increase_percentage
-                results['desired_increase'].append(desired_increase_percentage_current_round)
+                results['desired_increase'].append(desired_increase_percentage)
 
                 # Progress bar for voting rules within a round
                 for voting_rule in tqdm(self.model.voting_rules.keys(), desc=f"Round {i + 1}: Processing Voting Rules", leave=False, unit="rule"):
@@ -117,26 +123,34 @@ class EvalMetrics:
                         start_time = time.time()
                         
                         original_funds = original_allocation[project]
-                        if original_funds<=0.1:
-                            desired_increase = 0.001 * self.model.total_op_tokens * desired_increase_percentage_current_round/100
-                        else:
-                            desired_increase = original_funds * desired_increase_percentage_current_round/100
+                        # Skip projects with zero allocation
+                        if original_funds <= 10:
+                            print(f"Project {project} has zero allocation, bribery cost is infinite")
+                            bribery_cost=self.model.total_op_tokens
+                            absolute_desired_increase = None
 
-                        # Simulate bribery for the current project
-                        bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
+                        else:
+                            desired_increase = original_funds * desired_increase_percentage/100
+                            # Simulate bribery for the current project
+                            bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
+
                         elapsed_time = time.time() - start_time
 
                         # Log progress for each project
                         print(f"[Round {i + 1}] [Project {project + 1}/{self.model.num_projects}] "
                             f"Voting Rule: {voting_rule}, Desired Increase: {desired_increase:.4f}, "
-                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s")
+                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s"
+                            f"Desired Increase Percentage: {desired_increase_percentage:.4f}")
 
                         # Update the minimum bribery cost for the current voting rule
-                        if bribery_cost < min_bribery_cost:
+                        if 0<bribery_cost < min_bribery_cost:
                             min_bribery_cost = bribery_cost
+                            absolute_desired_increase=desired_increase
 
                     # Append the bribery cost for the current voting rule
                     results[f'{voting_rule}_bribery_cost'].append(min_bribery_cost)
+                    #results['absolute_desired_increase'].append(absolute_desired_increase)
+                    
 
                 # Update the round progress bar after completing all voting rules
                 round_progress_bar.update(1)
@@ -146,7 +160,74 @@ class EvalMetrics:
         print("\nAll rounds completed. Final results:\n", final_results)
         return final_results
     
+    def evaluate_bribery_avg(self, num_rounds=10, desired_increase_percentage=10):
+        """
+        Evaluate the bribery costs for increasing the allocation to a project by a desired percentage.
+        """
+        results = {
+            'round': list(range(1, num_rounds + 1)), 
+            'desired_increase': [],
+        }
+        
+        for voting_rule in self.model.voting_rules.keys():
+            results[f'{voting_rule}_bribery_cost'] = []
 
+        # Track the overall progress for the number of rounds
+        with tqdm(total=num_rounds, desc="Bribery Evaluation Progress", unit="round") as round_progress_bar:
+            for i in range(num_rounds):
+                print(f"\n--- Round {i + 1}/{num_rounds} ---")
+                self.model.step()  # Simulate the next round
+                results['desired_increase'].append(desired_increase_percentage)
+
+                # Progress bar for voting rules within a round
+                for voting_rule in tqdm(self.model.voting_rules.keys(), desc=f"Round {i + 1}: Processing Voting Rules", leave=False, unit="rule"):
+                    original_allocation = self.model.allocate_funds(voting_rule)
+                    total_bribery_cost = 0
+                    num_valid_projects = 0
+
+                    # Track progress for projects
+                    for project in range(self.model.num_projects):
+                        start_time = time.time()
+
+                        original_funds = original_allocation[project]
+                        # Skip projects with zero allocation
+                        if original_funds <= 100:
+                            print(f"Project {project} has zero allocation, bribery cost is infinite")
+                            bribery_cost = self.model.total_op_tokens
+                            absolute_desired_increase = None
+                        else:
+                            desired_increase = original_funds * desired_increase_percentage/100
+                            bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
+                            absolute_desired_increase = desired_increase
+                            num_valid_projects += 1  # Count valid projects
+
+                        elapsed_time = time.time() - start_time
+
+                        # Log progress for each project
+                        print(f"[Round {i + 1}] [Project {project + 1}/{self.model.num_projects}] "
+                            f"Voting Rule: {voting_rule}, Desired Increase: {desired_increase:.4f}, "
+                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s")
+
+                        # Accumulate total bribery cost for averaging
+                        total_bribery_cost += bribery_cost
+
+                    # Compute average bribery cost across all valid projects
+                    if num_valid_projects > 0:
+                        avg_bribery_cost = total_bribery_cost / num_valid_projects
+                    else:
+                        avg_bribery_cost = float('inf')  # Handle case where no valid projects exist
+
+                    # Append the average bribery cost for the current voting rule
+                    results[f'{voting_rule}_bribery_cost'].append(avg_bribery_cost)
+
+                round_progress_bar.update(1)
+
+        # Convert results to a DataFrame
+        final_results = pd.DataFrame(results)
+        print("\nAll rounds completed. Final results:\n", final_results)
+        return final_results
+
+    
     def evaluate_bribery_optimized(self, num_rounds=10, desired_increase_percentage=10, project_sample_size=10):
         """
         Evaluate the bribery costs for increasing the allocation to a project by a desired percentage.
@@ -156,7 +237,10 @@ class EvalMetrics:
         - desired_increase_percentage: The percentage increase in the allocation.
         - project_sample_size: Number of projects to randomly select for each round.
         """
-        results = {'round': list(range(1, num_rounds + 1)), 'desired_increase': []}
+        results = {'round': list(range(1, num_rounds + 1)), 
+                   'desired_increase': [],
+                   #'absolute_desired_increase': []
+                   }
 
         for voting_rule in self.model.voting_rules.keys():
             results[f'{voting_rule}_bribery_cost'] = []
@@ -182,10 +266,12 @@ class EvalMetrics:
                         start_time = time.time()
 
                         original_funds = original_allocation[project]
-                        if original_funds<=0.1:
-                            desired_increase = 0.01 * self.model.total_op_tokens * desired_increase_percentage_current_round/100
-                        else:
-                            desired_increase = original_funds * desired_increase_percentage_current_round/100
+                        if original_funds == 0:
+                            print(f"Project {project} has zero allocation, skipping...")
+                            continue  # Move to the next project
+
+
+                        desired_increase = original_funds * desired_increase_percentage_current_round / 100
 
                         # Simulate bribery for the current project
                         bribery_cost = self.simulate_bribery_generic(voting_rule, project, desired_increase)
@@ -194,14 +280,18 @@ class EvalMetrics:
                         # Log progress for each project
                         print(f"[Round {i + 1}] [Project {project + 1}/{self.model.num_projects}] "
                             f"Voting Rule: {voting_rule}, Desired Increase: {desired_increase:.4f}, "
-                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s")
+                            f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s,"
+                            f"Desired Increase: {desired_increase:.4f}, "
+                            f"Desired Increase Percentage: {desired_increase_percentage:.4f}, ")
 
                         # Update the minimum bribery cost for the current voting rule
                         if bribery_cost < min_bribery_cost:
                             min_bribery_cost = bribery_cost
+                            absolute_desired_increase=desired_increase
 
                     # Append the bribery cost for the current voting rule
                     results[f'{voting_rule}_bribery_cost'].append(min_bribery_cost)
+                    #results['absolute_desired_increase'].append(absolute_desired_increase)
 
                 # Update the round progress bar after completing all voting rules
                 round_progress_bar.update(1)

@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 import multiprocessing as mp
 from copy import deepcopy
-import experiments.experiments_config as experiments_config
+import experiments_config
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -87,7 +87,7 @@ if __name__ == '__main__':
 
         # Convert the result to a DataFrame and add the desired_increase_percentage column
         avg_bribery_costs_df = avg_bribery_costs.to_frame().T
-        avg_bribery_costs_df['desired_increase_percentage'] = desired_increase_percentage
+        #avg_bribery_costs_df['desired_increase_percentage'] = desired_increase_percentage
 
         # Append the results to the final DataFrame
         bribery_results = pd.concat([bribery_results, avg_bribery_costs_df], ignore_index=True)

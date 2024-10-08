@@ -10,7 +10,7 @@ project_root = os.path.join(current_dir, '..')  # Adjust this to point to the co
 sys.path.append(project_root)
 from model.VotingModel import VotingModel
 from model.EvalMetrics import EvalMetrics
-import experiments.experiments_config as experiments_config
+import experiments_config
 
 from model.VotingRules import VotingRules
 
