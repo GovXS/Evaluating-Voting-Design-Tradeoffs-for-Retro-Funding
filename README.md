@@ -3,7 +3,7 @@
 
 # Overview
 
-The **GovXS Retro Funding Simulator** is a tool designed to simulate different voting mechanisms used in Optimism’s Retro Funding process. It's part of the GovXS Evaluation Framework that covers typical Retro Funding design goals and respective axioms and metrics to evaluate any given voting design.
+The **GovXS Retro Funding Simulator** is a tool designed to simulate different voting mechanisms used in a Retro Funding context. It's part of the GovXS Voting Design Evaluation Framework that covers typical Retro Funding design goals and respective axioms and metrics to evaluate any given voting design.
 
 ![GovXS-Evaluation-Framework-V1](https://github.com/user-attachments/assets/2dc6196e-8a77-4ec2-a89c-1fe6b482aea1)
 
