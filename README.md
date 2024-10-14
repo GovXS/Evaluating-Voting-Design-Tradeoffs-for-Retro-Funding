@@ -52,7 +52,7 @@ This setup allows for both running pre-existing experiments and defining new vot
 ### Models
 
 1. **VotingModel** (`models.VotingModel`)
-   - The core simulation engine for the RetroPGF Simulator. It defines the number of voters, projects, and the voting rules.
+   - The core simulation engine for the Retro Funding Simulator. It defines the number of voters, projects, and the voting rules.
    - Allows for custom voting rules, fund allocation methods, and the computation of evaluation metrics.
    - Key features include:
      - **Voting Rules Discovery:** The simulator automatically detects all voting rule functions and can apply them to allocate funds.
@@ -65,7 +65,7 @@ This setup allows for both running pre-existing experiments and defining new vot
      - `r1_quadratic`: R1 Quadratic Voting, where the square root of the votes is used to determine allocation. We replicate the [Optimism RetroPGF Round 1](https://community.optimism.io/citizens-house/rounds/retropgf-1) voting rule.
      - `r2_mean`: R2 Mean Rule, where the mean number of votes is used for allocation. We replicate the [Optimism RetroPGF Round 2](https://community.optimism.io/citizens-house/rounds/retropgf-2) voting rule, the results are normalized.
      - `r3_median`: R3 Quorum Median rule, using the median of votes cast to allocate funds. We replicate the [Optimism RetroPGF Round 3](https://community.optimism.io/citizens-house/rounds/retropgf-3) voting rule, where a quorum applies and the results are normalized.
-     - `r4_capped_median`: R4 Median Impact Metric Score, a capped version of median voting to ensure fairness across projects. We replicate the [Optimism RetroPGF Round 4](https://community.optimism.io/citizens-house/rounds/retropgf-4)) voting rule, where a quorum applies and the results are normalized. In our simulations we work with a simplified version R4a Simplified Capped Median and ignore first step to calculate the Impact Metric Score based on the project's KPIs.
+     - `r4_capped_median`: R4 Median Impact Metric Score, a capped version of median voting to ensure fairness across projects. We replicate the [Optimism Retro Funding Round 4](https://community.optimism.io/citizens-house/rounds/retropgf-4)) voting rule, where a quorum applies and the results are normalized. In our simulations we work with a simplified version R4a Simplified Capped Median and ignore first step to calculate the Impact Metric Score based on the project's KPIs.
 
 
 3. **Evaluation Metrics** (`metrics.EvalMetrics`)
@@ -89,7 +89,7 @@ This setup allows for both running pre-existing experiments and defining new vot
      - **Multinomial Model:** Voters distribute their tokens using probabilities sampled from a multinomial distribution.
 
 2. **ProjectAgent** (`agents.ProjectAgent`)
-   - Represents a project in the RetroPGF simulation.
+   - Represents a project in the Retro Funding simulation.
    - Receives votes from the voters and eventually, funds are allocated based on the aggregated votes.
    - Tracks the total votes received and the final funds allocated for each project.
 
@@ -184,13 +184,13 @@ For a detailed description of the experiments' key components, simulation steps 
 
 ## Voting Rule Verification
 
-The **Voting Rule Verification** directory contains code that verifies the implementation of the voting rules in the **Optimism RetroPGF Simulator** by comparing them against historical data from previous RetroPGF funding rounds. This section provides an explanation of the verification process, which involves cross-checking the outcomes of voting rules in the simulator with actual allocations from past rounds of the RetroPGF process.
+The **Voting Rule Verification** directory contains code that verifies the implementation of the voting rules in the **GovXS Retro Funding Simulator** by comparing them against historical data from previous RetroPGF/Retro Funding funding rounds. This section provides an explanation of the verification process, which involves cross-checking the outcomes of voting rules in the simulator with actual allocations from past rounds of the Retro Funding process.
 
 #### Purpose
 
 The primary purpose of this directory is to:
 1. Ensure that the implemented voting rules (e.g., **quadratic voting**, **mean voting**, **median voting**) in the simulator are producing accurate results.
-2. Compare the simulated allocations with the actual allocations from RetroPGF funding rounds.
+2. Compare the simulated allocations with the actual allocations from Retro Funding rounds.
 
 
 ### Verification Process by Round
@@ -306,7 +306,7 @@ The following steps were performed to conduct the comparison:
 The **data** directory contains three subdirectories:
 
 1. **historic_data**:
-   - Holds **historical data** from previous RetroPGF rounds used for **voting rule verification**.
+   - Holds **historical data** from previous Retro Funding rounds used for **voting rule verification**.
    - Includes project funding allocations, badgeholder votes, and impact metrics.
 
 2. **simulation_data**:
@@ -319,4 +319,4 @@ The **data** directory contains three subdirectories:
 
 # Conclusion
 
-The **Optimism RetroPGF Simulator** offers a flexible and powerful tool for testing and evaluating different voting mechanisms in public goods funding. By using agent-based modeling, it provides detailed insights into how voting behavior and fund allocation change under various rules and metrics. This makes it ideal for exploring new voting systems and understanding their strengths and vulnerabilities.
+The **GovXS Retro Funding Simulator** offers a flexible and powerful tool for testing and evaluating different voting mechanisms in public goods funding. By using agent-based modeling, it provides detailed insights into how voting behavior and fund allocation change under various rules and metrics. This makes it ideal for exploring new voting systems and understanding their strengths and vulnerabilities.
