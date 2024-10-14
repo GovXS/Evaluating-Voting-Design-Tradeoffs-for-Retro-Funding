@@ -190,7 +190,90 @@ This script is designed to evaluate the **resistance to control** in a voting sy
 - The experiment calculates and saves the **average control cost** (the number of voters added/removed) for each voting rule, making it possible to analyze how resistant each rule is to manipulation through voter addition or removal.
 - The results are saved in a CSV file, providing insights into the vulnerability of the voting system to control attempts.
 
+# Robustness Evaluation Experiment
 
+### Key Components of the Experiment
+
+1. **Experiment Setup**:
+   - This script sets up a **robustness evaluation** experiment, which simulates voting behavior across a certain number of voters and projects measuring how stable or resilient the system is against changes in voting conditions, such as voter preferences and token distributions.
+   - The main parameters include the number of **voters** (40), **projects** (145), and **tokens** (8 million) available for allocation. The experiment runs over 5 **voting rounds**.
+
+```
+python
+   num_voters = experiments_config.num_voters  # 40
+   num_projects = experiments_config.num_projects  # 145
+   total_op_tokens = experiments_config.total_op_tokens  # 8e6
+   num_rounds = experiments_config.num_rounds  # 5
+   voter_type = experiments_config.voter_type  # 'mallows_model'
+   quorum = experiments_config.quorum  # 17
+```
+
+2. **Running the Simulation:**
+
+- The experiment uses the VotingModel to simulate voting rounds, with each round generating new fund allocations based on the voting behavior. The EvalMetrics class is used to evaluate the robustness of the system.
+
+```python
+
+model = VotingModel(voter_type=voter_type, num_voters=num_voters, num_projects=num_projects, total_op_tokens=total_op_tokens)
+model.step()
+eval_metrics = EvalMetrics(model)
+```
+3. **Store Fund Allocation and Results:**
+
+- The initial fund allocations for each project are computed after running the model for one step. These allocations are stored in a DataFrame and saved to a CSV file for further analysis.
+- The robustness evaluation is performed over the defined number of rounds, with the results stored in a CSV file.
+
+```
+allocation_df = model.compile_fund_allocations()
+allocation_df.to_csv(os.path.join(output_dir, 'allocation_df.csv'), index=False)
+
+robustness_results = eval_metrics.evaluate_robustness(num_rounds=num_rounds)
+robustness_results.to_csv(os.path.join(output_dir, f'robustness_results_{timestamp}_{num_voters}_{num_projects}_{num_rounds}.csv'), index=False)
+```
+4. **Save Experiment Parameters:**
+
+The parameters used in the experiment (such as the number of voters, projects, and the voting model) are saved to a text file for reproducibility. This ensures that future users can replicate the exact experimental conditions.
+
+### Explanation of the Key Concepts:
+
+- Voting Model:
+        The model simulates voting behavior based on a Mallows model, which captures how voters with similar preferences tend to rank projects similarly. The system distributes tokens across projects based on voters' preferences.
+
+- Robustness Evaluation:
+        Robustness measures how sensitive the allocation results are to perturbations in voter behavior or token distribution. By running the voting model over multiple rounds, the evaluation checks how consistent or stable the funding allocations remain.
+
+- Voting Rounds:
+        The experiment evaluates the system over 5 voting rounds, with each round representing a new set of votes cast by the same pool of voters. The results of each round are averaged to minimize the impact of randomness in individual votes.
+
+- Fund Allocations:
+        For each round of voting, the system calculates how much funding each project receives based on the votes and token distributions. The allocations are stored in a DataFrame and can be used for analyzing trends or anomalies in the voting process.
+
+### Experiment Output:
+
+- The experiment generates two main outputs:
+        A fund allocation DataFrame (allocation_df) that captures the distribution of funding across all projects for a given voting round.
+        A robustness evaluation DataFrame (robustness_results), which stores metrics on how stable the system is across multiple rounds.
+
+- The results are saved in CSV files for future analysis:
+        allocation_df.csv contains the initial fund allocations.
+        robustness_results.csv contains the robustness evaluation metrics.
+
+### Sample Flow of Data:
+
+- Initial Setup:
+        The experiment configures 40 voters, 145 projects, and allocates a total of 8 million tokens for voting. It initializes the Mallows voting model to simulate voter behavior.
+
+- Fund Allocation:
+        The simulation generates initial allocations, which are stored in allocation_df.csv.
+
+- Robustness Evaluation:
+        The system's robustness is evaluated by running the model for 5 rounds. The average metrics are saved in robustness_results.csv.
+
+### Summary:
+
+- This experiment evaluates the robustness of a voting system by running simulations over multiple rounds and analyzing how stable the fund allocations are.
+- The results are stored in CSV files for further examination, providing insights into the stability of the system under varying conditions.
+- The experiment parameters are documented for reproducibility, ensuring that the experiment can be replicated with the same configuration in the future.
 
 # VEV Experiment
 
