@@ -1,9 +1,14 @@
 # Evaluating-Voting-Design-Tradeoffs-for-Retro-Funding
-### Optimism RetroPGF Simulator - README
+### GovXS Retro Funding Simulator - README
 
 # Overview
 
-The **Optimism RetroPGF Simulator** is a tool designed to simulate different voting mechanisms used in Optimism’s Retroactive Public Goods Funding (RetroPGF) process. The simulator allows users to test various voting rules, simulate voter behavior, and evaluate key performance metrics like bribery cost, social welfare, robustness, fairness, and resistance to control.
+The **GovXS Retro Funding Simulator** is a tool designed to simulate different voting mechanisms used in Optimism’s Retro Funding process. It's part of the GovXS Evaluation Framework that covers typical Retro Funding design goals and respective axioms and metrics to evaluate any given voting design.
+
+![GovXS-Evaluation-Framework-V1](https://github.com/user-attachments/assets/2dc6196e-8a77-4ec2-a89c-1fe6b482aea1)
+
+
+The simulator allows users to test various voting rules, simulate voter behavior, and evaluate key performance metrics like Cost of Control or Voter Extractable Value by applying agent-based simulations.
 
 This simulator models both **voters** and **projects** using agents, and supports multiple voting systems such as **quadratic voting**, **mean voting**, **median voting**, and **capped voting**. The voting rules aggregate votes into a final fund allocation for projects, enabling researchers to evaluate the effects of these rules under different simulation conditions.
 
@@ -64,13 +69,13 @@ This setup allows for both running pre-existing experiments and defining new vot
 
 
 3. **Evaluation Metrics** (`metrics.EvalMetrics`)
-   - Provides functions to evaluate the performance of voting rules based on various metrics:
-     - **Bribery Resistance**: Measures how susceptible each voting rule is to bribery.
-     - **Gini Index**: A fairness metric evaluating how equitably funds are distributed.
-     - **Social Welfare**: Measures how well the allocation of funds satisfies the preferences of the voters.
-     - **Control Resistance**: Evaluates how difficult it is to control the voting outcome by adding or removing voters.
+   - Provides functions to evaluate the performance of voting rules based on various metrics, such as
      - **VEV (Voter Extractable Value)**: Tests how much a voter can skew results for personal gain.
      - **Robustness**: Measures the system’s stability when a voter’s vote is altered.
+     - **Cost of Bribery**: Measures how susceptible each voting rule is to bribery.
+     - **Cost of Control**: Evaluates how difficult it is to control the voting outcome by adding or removing voters.
+     - **Social Welfare**: Measures how well the allocation of funds satisfies the preferences of the voters.
+
 
 ### Agents
 
@@ -126,9 +131,9 @@ This setup allows for both running pre-existing experiments and defining new vot
    model.add_voting_rule("custom_rule", custom_voting_rule)
    ```
 
-### Evaluation Metrics
+### Evaluation Metrics (examples)
 
-1. **Bribery Resistance Evaluation:**
+1. **Cost of Bribery:**
    - Evaluate how difficult it is to bribe voters to skew the allocation toward a specific project:
 
    ```python
@@ -150,7 +155,7 @@ This setup allows for both running pre-existing experiments and defining new vot
    vev_results = metrics.evaluate_vev(num_rounds=100)
    ```
 
-4. **Robustness Testing:**
+4. **Robustness:**
    - Evaluate the robustness of a voting system by measuring the effect of random vote changes:
 
    ```python
@@ -165,7 +170,7 @@ This setup allows for both running pre-existing experiments and defining new vot
    egalitarian_results = metrics.evaluate_egalitarian_score(num_rounds=10)
    ```
 
-6. **Resistance to Control:**
+6. **Cost of Control:**
    - Evaluate the cost of adding or removing voters to manipulate voting outcomes:
 
    ```python
@@ -175,7 +180,7 @@ This setup allows for both running pre-existing experiments and defining new vot
 
 ## Experiments
 
-This section details various experiments conducted using the Optimism RetroPGF Simulator, where key parameters were swept to evaluate the performance of different voting rules based on various metrics.
+This section details various experiments conducted using the Optimism RetroPGF Simulator, where key parameters are swept to evaluate the performance of different voting rules based on various metrics.
 
 ### Control Experiment
 
