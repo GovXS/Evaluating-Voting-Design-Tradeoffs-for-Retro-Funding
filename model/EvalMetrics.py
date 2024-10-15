@@ -11,19 +11,6 @@ class EvalMetrics:
         self.model = model
 
     def simulate_bribery_generic(self, voting_rule, target_project, desired_increase):
-        """
-        Generalized bribery simulation for any voting rule.
-        
-        Parameters:
-        - voting_rule: The voting rule method (e.g., 'r1_quadratic', 'r2_mean', etc.)
-        - target_project: The project that we are targeting for bribery.
-        - desired_increase: The percentage increase we want in the target project's allocation.
-        - max_iterations: Maximum number of iterations to prevent infinite loops.
-        - tolerance: Minimal acceptable difference between new_funds and target_funds.
-
-        Returns:
-        - bribery_cost: The total additional votes required (bribery cost).
-        """
         num_voters, num_projects = self.model.voting_matrix.shape
         original_allocation = self.model.allocate_funds(voting_rule)
         original_funds = original_allocation[target_project]
@@ -36,7 +23,7 @@ class EvalMetrics:
         bribery_cost = 0
         new_voting_matrix = self.model.voting_matrix.copy()
         original_matrix = self.model.voting_matrix.copy()  # Save the original matrix
-        max_no_progress_iterations=20
+        max_no_progress_iterations=5
         no_progress_iterations = 0
         prev_funds = original_funds
         #print(f"--- Bribery Simulation Debugging ---")
@@ -73,7 +60,9 @@ class EvalMetrics:
                     no_progress_iterations = 0  # Reset if there was progress
                 
                 # Add a small, fixed amount of additional votes (say 1% of the original votes)
-                additional_votes = 0.01 * np.sum(original_matrix[:, target_project])
+                #additional_votes = 0.05 * np.sum(original_matrix[:, target_project])
+                fund_gap = target_funds - new_funds
+                additional_votes = 0.05 * np.sum(original_matrix[:, target_project]) * (fund_gap / target_funds)
                 new_voting_matrix[:, target_project] += additional_votes
 
                 #print(f"Additional Votes: {additional_votes}, Bribery Cost So Far: {bribery_cost}")
@@ -87,9 +76,9 @@ class EvalMetrics:
             # Step 5: Restore the original voting matrix
             self.model.voting_matrix = original_matrix
 
-        if bribery_cost == 0 and new_funds < target_funds:
-            bribery_cost = self.model.total_op_tokens
-            print(f"For project {target_project}, unable to meet target. Bribery cost set to infinity.")
+       # if bribery_cost == 0 and new_funds < target_funds:
+       #     bribery_cost = self.model.total_op_tokens
+    #    print(f"For project {target_project}, unable to meet target. Bribery cost set to infinity.")
 
         return bribery_cost
 
@@ -124,7 +113,7 @@ class EvalMetrics:
                         
                         original_funds = original_allocation[project]
                         # Skip projects with zero allocation
-                        if original_funds <= 10:
+                        if original_funds >= self.model.total_op_tokens:
                             print(f"Project {project} has zero allocation, bribery cost is infinite")
                             bribery_cost=self.model.total_op_tokens
                             absolute_desired_increase = None
@@ -138,7 +127,7 @@ class EvalMetrics:
 
                         # Log progress for each project
                         print(f"[Round {i + 1}] [Project {project + 1}/{self.model.num_projects}] "
-                            f"Voting Rule: {voting_rule}, Desired Increase: {desired_increase:.4f}, "
+                            f"Voting Rule: {voting_rule}, Absolute Desired Increase: {desired_increase:.4f}, "
                             f"Bribery Cost: {bribery_cost:.4f}, Elapsed Time: {elapsed_time:.2f}s"
                             f"Desired Increase Percentage: {desired_increase_percentage:.4f}")
 
@@ -191,7 +180,7 @@ class EvalMetrics:
 
                         original_funds = original_allocation[project]
                         # Skip projects with zero allocation
-                        if original_funds <= 100:
+                        if original_funds >= self.model.total_op_tokens:
                             print(f"Project {project} has zero allocation, bribery cost is infinite")
                             bribery_cost = self.model.total_op_tokens
                             absolute_desired_increase = None

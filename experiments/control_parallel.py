@@ -92,7 +92,9 @@ if __name__ == '__main__':
         control_results = run_parallel_control_evaluation(model, desired_increase, num_rounds, num_workers)
         
         # Calculate the average control results for this percentage
+        control_results = control_results.apply(pd.to_numeric, errors='coerce')
         avg_control_results = control_results.mean()
+        
         
         # Convert the average results to a DataFrame and add the desired_increase_percentage
         avg_control_results_df = avg_control_results.to_frame().T
