@@ -1,8 +1,0 @@
-experiment_description: r4-voting-matrix with 10e6 funds
-num_voters: 108
-num_projects: 230
-total_op_tokens: 10000000.0
-num_rounds per iteration: 100
-voter_type: r4_voting_matrix
-quorum: 17
-timestamp: 20241008_210029
