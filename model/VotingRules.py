@@ -1,6 +1,7 @@
 import numpy as np
 
 QUORUM = 17
+MIN_AMOUNT=1500
 
 
 class VotingRules:
@@ -21,7 +22,6 @@ class VotingRules:
     def r3_median(self, voting_matrix, total_op_tokens, num_voters):
         num_voters, num_projects = voting_matrix.shape
         # Step 1: Calculate the median, ignoring zeros
-        MIN_AMOUNT = 0
         def non_zero_median(column):
             non_zero_values = column[column > 0]
             if len(non_zero_values) == 0:
@@ -29,10 +29,12 @@ class VotingRules:
             return np.median(non_zero_values)
         
         median_votes = np.apply_along_axis(non_zero_median, 0, voting_matrix)
+
+        votes_count = np.apply_along_axis(lambda column: np.count_nonzero(column > 0), 0, voting_matrix)
+
+        # Step 3: Apply eligibility criteria (median >= MIN_AMOUNT and votes_count >= quorum)
+        eligible_projects = (median_votes >= MIN_AMOUNT) & (votes_count >= QUORUM)
         
-        # Step 2: Apply eligibility criteria (median >= MIN_AMOUNT)
-        
-        eligible_projects = median_votes >= MIN_AMOUNT
         eligible_median_votes = median_votes * eligible_projects
         
         # Step 3: Scale the eligible median votes to match the total_op_tokens
