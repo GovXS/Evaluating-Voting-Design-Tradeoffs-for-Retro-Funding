@@ -5,7 +5,7 @@
 
 The **GovXS Retro Funding Simulator** is a tool designed to simulate different voting mechanisms used in a Retro Funding context. It's part of the GovXS Voting Design Evaluation Framework that covers typical Retro Funding design goals and respective axioms and metrics to evaluate any given voting design.
 
-![GovXS-Evaluation-Framework-V1](https://github.com/user-attachments/assets/2dc6196e-8a77-4ec2-a89c-1fe6b482aea1)
+![GovXS-Evaluation-Framework-V11](https://github.com/user-attachments/assets/c2f48967-fde2-4d04-ad86-dc3abd4bb586)
 
 
 The simulator allows users to test various voting rules, simulate voter behavior, and evaluate key performance metrics like Cost of Control or Voter Extractable Value by applying agent-based simulations.
